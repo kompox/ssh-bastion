@@ -5,8 +5,8 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"path/filepath"
-	"strings"
 
 	"github.com/kompox/ssh-bastion/internal/auth"
 	"github.com/kompox/ssh-bastion/internal/config"
@@ -118,7 +118,11 @@ func (s *Server) handleAddKey(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleEnableKey(w http.ResponseWriter, r *http.Request) {
 	userDirID := auth.GetUserDirID(r)
-	fingerprint := r.PathValue("fingerprint")
+	fingerprint, err := url.PathUnescape(r.PathValue("fingerprint"))
+	if err != nil {
+		http.Error(w, "Invalid fingerprint", http.StatusBadRequest)
+		return
+	}
 
 	if err := s.keyRegistry.UpdateKeyStatus(userDirID, fingerprint, true); err != nil {
 		http.Error(w, "Failed to enable key", http.StatusInternalServerError)
@@ -134,7 +138,11 @@ func (s *Server) handleEnableKey(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleDisableKey(w http.ResponseWriter, r *http.Request) {
 	userDirID := auth.GetUserDirID(r)
-	fingerprint := r.PathValue("fingerprint")
+	fingerprint, err := url.PathUnescape(r.PathValue("fingerprint"))
+	if err != nil {
+		http.Error(w, "Invalid fingerprint", http.StatusBadRequest)
+		return
+	}
 
 	if err := s.keyRegistry.UpdateKeyStatus(userDirID, fingerprint, false); err != nil {
 		http.Error(w, "Failed to disable key", http.StatusInternalServerError)
@@ -150,7 +158,11 @@ func (s *Server) handleDisableKey(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleDeleteKey(w http.ResponseWriter, r *http.Request) {
 	userDirID := auth.GetUserDirID(r)
-	fingerprint := r.PathValue("fingerprint")
+	fingerprint, err := url.PathUnescape(r.PathValue("fingerprint"))
+	if err != nil {
+		http.Error(w, "Invalid fingerprint", http.StatusBadRequest)
+		return
+	}
 
 	if err := s.keyRegistry.DeleteKey(userDirID, fingerprint); err != nil {
 		http.Error(w, "Failed to delete key", http.StatusInternalServerError)
@@ -219,8 +231,4 @@ func (s *Server) handleDeleteAlias(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/dns", http.StatusSeeOther)
-}
-
-func init() {
-	_ = strings.Join(nil, "")
 }
