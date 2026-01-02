@@ -1,0 +1,18 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Git: Commit with editor",
+      "type": "shell",
+      "command": "git -c core.editor='code --wait' commit -v -e -F _tmp/git-commit.txt",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true,
+        "clear": true
+      },
+      "detail": "Edit commit message in editor and commit"
+    }
+  ]
+}
