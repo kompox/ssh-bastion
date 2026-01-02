@@ -2,7 +2,7 @@
 id: design-manual-testing
 title: Manual Testing & Local Dev Workflow
 status: stable
-updated: 2026-01-02T17:09:09Z
+updated: 2026-01-02T18:16:42Z
 ---
 # Manual Testing & Local Dev Workflow
 
@@ -16,13 +16,32 @@ This document describes the supported manual testing workflows for the ssh-basti
 - Authentication is *trusted-header based* (an external auth proxy injects identity headers).
 - Persistent state is file-based under a configured data directory.
 
+## Makefile targets (recommended)
+
+If available, prefer these targets over running raw `go` commands:
+
+```bash
+make clean
+make build
+make test
+make run-test-mode
+```
+
 ## Build
 
 ```bash
-go build -o ssh-bastion ./cmd/ssh-bastion
+make build
 ```
 
 ## Run Locally
+
+### Quick start (browser testing without an auth proxy)
+
+This starts the server in “test mode” (override identity), storing data under `_tmp/data`:
+
+```bash
+make run-test-mode
+```
 
 ### Data directory
 
@@ -70,6 +89,27 @@ When `SSHBASTION_AUTH_OVERRIDE_USER_ID` and `SSHBASTION_AUTH_OVERRIDE_EMAIL` are
 4. Navigate to `DNS Aliases` and add/delete aliases
 
 All operations are associated with the override identity.
+
+### Error UX regression checks (task-20260102b)
+
+Goal: confirm user-facing failures do not render a “plain error text page”.
+
+1. **Keys form error**: submit an invalid public key on `/` and confirm:
+     - The page is re-rendered with the normal layout
+     - An inline error is shown
+     - The text area preserves the submitted value
+2. **DNS form error**: submit a duplicate `source` on `/dns` and confirm:
+     - The page is re-rendered with the normal layout
+     - An inline error is shown
+     - Inputs preserve the submitted values
+3. **Auth failure (no headers, no overrides)**: in a separate terminal, run:
+
+```bash
+SSHBASTION_AUTH_OVERRIDE_USER_ID= SSHBASTION_AUTH_OVERRIDE_EMAIL= \
+  curl -i -H "Accept: text/html" http://localhost:8080/
+```
+
+Confirm it returns `401` and HTML (so browsers don’t show a plain text error page).
 
 ### Browser testing with header injection (no override)
 
@@ -152,9 +192,9 @@ curl -v http://localhost:8080/
 
 ```bash
 # Run all tests
-go test ./...
+make test
 
-# Verbose
+# Alternative (without Makefile)
 go test -v ./...
 
 # Per-package

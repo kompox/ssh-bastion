@@ -1,5 +1,15 @@
 # ssh-bastion
 
+## Makefile targets (recommended)
+
+If available, prefer these targets over running raw `go` commands (no user intervention needed):
+
+```bash
+make build
+make test
+make run-test-mode
+```
+
 ## Docs for developers and maintainers
 
 - Design docs: `_dev/design/`
