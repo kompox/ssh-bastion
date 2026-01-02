@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - SSH Bastion</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+</head>
+<body>
+    <nav class="container">
+        <ul>
+            <li><strong>SSH Bastion</strong></li>
+        </ul>
+        <ul>
+            <li><a href="/">SSH Keys</a></li>
+            <li><a href="/dns">DNS Aliases</a></li>
+            {{if .Email}}<li><small>{{.Email}}</small></li>{{end}}
+        </ul>
+    </nav>
+    <main class="container">
+        {{template "content" .}}
+    </main>
+</body>
+</html>

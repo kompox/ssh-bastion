@@ -1,0 +1,48 @@
+{{define "content"}}
+<h1>DNS Aliases</h1>
+
+<article>
+    <header><strong>Add New Alias</strong></header>
+    <form method="POST" action="/dns">
+        <label>
+            Source FQDN
+            <input type="text" name="source" placeholder="gitea.example.com" required>
+        </label>
+        <label>
+            Destination FQDN
+            <input type="text" name="destination" placeholder="gitea.gitea.svc.cluster.local" required>
+        </label>
+        <button type="submit">Add Alias</button>
+    </form>
+</article>
+
+<h2>Current Aliases</h2>
+
+{{if .Aliases}}
+<table>
+    <thead>
+        <tr>
+            <th>Source</th>
+            <th>Destination</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Aliases}}
+        <tr>
+            <td><code>{{.Source}}</code></td>
+            <td><code>{{.Destination}}</code></td>
+            <td>
+                <form method="POST" action="/dns/{{.Source}}/delete" style="display:inline">
+                    <button type="submit" class="contrast">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+{{else}}
+<p>No DNS aliases configured yet.</p>
+{{end}}
+
+{{end}}

@@ -46,50 +46,50 @@ Implement the `ssh-bastion web` executable described in the design overview:
 
 ## Plan & Checklist
 
-- [ ] Confirm MVP scope from design overview
-  - [ ] Pages: SSH Public Keys / DNS Aliases
-  - [ ] Auth: return 401 if user ID or email header missing/empty
+- [x] Confirm MVP scope from design overview
+  - [x] Pages: SSH Public Keys / DNS Aliases
+  - [x] Auth: return 401 if user ID or email header missing/empty
 
-- [ ] Define public surfaces (routes + templates)
-  - [ ] Routes for keys CRUD (list/add/enable-disable/delete)
-  - [ ] Routes for alias CRUD (list/add/delete)
-  - [ ] HTMX partials (post-redirect-get or swap fragments)
+- [x] Define public surfaces (routes + templates)
+  - [x] Routes for keys CRUD (list/add/enable-disable/delete)
+  - [x] Routes for alias CRUD (list/add/delete)
+  - [x] HTMX partials (post-redirect-get or swap fragments)
 
-- [ ] Implement auth middleware (trusted headers)
-  - [ ] Env vars: `SSHBASTION_AUTH_MODE`, `SSHBASTION_AUTH_USER_ID_HEADER`, `SSHBASTION_AUTH_EMAIL_HEADER`
-  - [ ] Derive stable storage key from user ID header
-  - [ ] Store by `UUIDv3(namespace, normalize(userId))` per design
+- [x] Implement auth middleware (trusted headers)
+  - [x] Env vars: `SSHBASTION_AUTH_MODE`, `SSHBASTION_AUTH_USER_ID_HEADER`, `SSHBASTION_AUTH_EMAIL_HEADER`
+  - [x] Derive stable storage key from user ID header
+  - [x] Store by `UUIDv3(namespace, normalize(userId))` per design
 
-- [ ] Implement storage primitives
-  - [ ] Env var: `SSHBASTION_DATA_DIR` (non-empty)
-  - [ ] Directory layout creation on demand
-  - [ ] Atomic write helper (temp + rename in same dir)
+- [x] Implement storage primitives
+  - [x] Env var: `SSHBASTION_DATA_DIR` (non-empty)
+  - [x] Directory layout creation on demand
+  - [x] Atomic write helper (temp + rename in same dir)
 
-- [ ] Implement SSH public key registry
-  - [ ] Parse submitted public key (reject unsupported/invalid)
-  - [ ] Compute canonical fingerprint (SHA256 as OpenSSH shows)
-  - [ ] Persist per-user key material + metadata
-  - [ ] Enable/disable and delete operations
+- [x] Implement SSH public key registry
+  - [x] Parse submitted public key (reject unsupported/invalid)
+  - [x] Compute canonical fingerprint (SHA256 as OpenSSH shows)
+  - [x] Persist per-user key material + metadata
+  - [x] Enable/disable and delete operations
 
-- [ ] Implement DNS alias registry
-  - [ ] Validate alias inputs (FQDN-like; simple sanity checks)
-  - [ ] Persist aliases in a single source-of-truth file
-  - [ ] Generate dnsmasq config using `cname=` directives
+- [x] Implement DNS alias registry
+  - [x] Validate alias inputs (FQDN-like; simple sanity checks)
+  - [x] Persist aliases in a single source-of-truth file
+  - [x] Generate dnsmasq config using `cname=` directives
 
-- [ ] Implement render/generation outputs
-  - [ ] Render `authorized_keys/jump` by aggregating enabled keys
-  - [ ] Render `dns/dnsmasq.d/generated.conf` from alias rules
-  - [ ] Ensure generation is idempotent and safe on concurrent writes
+- [x] Implement render/generation outputs
+  - [x] Render `authorized_keys/jump` by aggregating enabled keys
+  - [x] Render `dns/dnsmasq.d/generated.conf` from alias rules
+  - [x] Ensure generation is idempotent and safe on concurrent writes
 
-- [ ] Implement UI pages (minimal)
-  - [ ] SSH Public Keys page (list/add/toggle/delete)
-  - [ ] DNS Aliases page (list/add/delete)
-  - [ ] Display user email from header (do not store by email)
+- [x] Implement UI pages (minimal)
+  - [x] SSH Public Keys page (list/add/toggle/delete)
+  - [x] DNS Aliases page (list/add/delete)
+  - [x] Display user email from header (do not store by email)
 
-- [ ] Testing + manual verification
-  - [ ] Unit tests: key parsing + fingerprinting + atomic writes
-  - [ ] Unit tests: alias validation + dnsmasq conf generation
-  - [ ] Manual run notes (how to set headers + data dir for local testing)
+- [x] Testing + manual verification
+  - [x] Unit tests: key parsing + fingerprinting + atomic writes
+  - [x] Unit tests: alias validation + dnsmasq conf generation
+  - [x] Manual run notes (how to set headers + data dir for local testing)
 
 ## Progress
 
@@ -98,6 +98,16 @@ Implement the `ssh-bastion web` executable described in the design overview:
 
 - 2026-01-02T12:03:07Z
   - Align scope/checklist with design overview (trusted-header auth, keys, DNS)
+
+- 2026-01-02T12:23:00Z
+  - Complete initial implementation
+  - Implement config, auth middleware, storage primitives
+  - Implement SSH key registry with fingerprinting
+  - Implement DNS alias registry with dnsmasq config generation
+  - Create HTML templates with Pico.css and HTMX
+  - Implement web server with all routes
+  - Write unit tests for storage, keys, and DNS packages
+  - All tests passing
 
 ## References
 
