@@ -79,6 +79,17 @@ func TestDeleteAlias(t *testing.T) {
 	}
 }
 
+func TestDeleteAlias_MissingAlias_ReturnsNotExist(t *testing.T) {
+	tmpDir := t.TempDir()
+	store := storage.New(tmpDir)
+	registry := NewRegistry(store)
+
+	err := registry.DeleteAlias("doesnotexist.example.com")
+	if !os.IsNotExist(err) {
+		t.Fatalf("expected os.IsNotExist error; got %v", err)
+	}
+}
+
 func TestRenderDnsmasqConf(t *testing.T) {
 	tmpDir := t.TempDir()
 	store := storage.New(tmpDir)

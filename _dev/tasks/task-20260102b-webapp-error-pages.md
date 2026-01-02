@@ -2,7 +2,7 @@
 id: task-20260102b-webapp-error-pages
 title: Improve web UX for errors (no plain error pages)
 status: done
-updated: 2026-01-02T19:47:19Z
+updated: 2026-01-02T20:07:00Z
 ---
 # Task: Improve web UX for errors (no plain error pages)
 
@@ -37,6 +37,11 @@ Remove “plain error text page” responses from user-facing flows and present 
 - [x] Add regression tests for representative failures
 - [x] Update manual testing notes if needed
 
+### Follow-ups captured
+
+- [x] Align DNS delete missing behavior with keys (`400` not `303`)
+- [x] Document expected HTTP statuses in routes design doc
+
 ## Progress
 
 - 2026-01-02T17:48:53Z
@@ -62,8 +67,15 @@ Remove “plain error text page” responses from user-facing flows and present 
 - 2026-01-02T19:47:19Z
   - Manually verify flash banner placement and visibility in browser
 
+- 2026-01-02T20:07:00Z
+  - Align DNS delete missing behavior to return `400` (no silent `303` redirect)
+  - Add regression tests for missing DNS alias delete
+  - Document expected HTTP statuses in routes design doc
+
 ## References
 
 - [design-overview] - Design overview document
+- [design-webapp-routes] - Web app routes & sitemap
 
 [design-overview]: ../design/design-overview.md
+[design-webapp-routes]: ../design/design-webapp-routes.md

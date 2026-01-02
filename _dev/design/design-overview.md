@@ -1,8 +1,8 @@
 ---
 id: design-overview
 title: kompox-ssh-bastion (design + implementation plan)
-status: draft
-updated: 2026-01-02
+status: stable
+updated: 2026-01-02T19:00:32Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: kompox-ssh-bastion (design + implementation plan)
@@ -348,6 +348,7 @@ Optionally also:
 
 ## References
 
+- See: [design-webapp-routes] - Route list (GET/POST) and simple sitemap for manual testing and maintenance.
 - Reference: [OpenSSH sshd_config]
 - Reference: [dnsmasq]
 - Reference: [oauth2-proxy]
@@ -355,6 +356,7 @@ Optionally also:
 - Reference: [HTMX]
 - Reference: [Pico.css]
 
+[design-webapp-routes]: ./design-webapp-routes.md
 [OpenSSH sshd_config]: https://man.openbsd.org/sshd_config
 [dnsmasq]: https://thekelleys.org.uk/dnsmasq/doc.html
 [oauth2-proxy]: https://oauth2-proxy.github.io/oauth2-proxy/

@@ -294,6 +294,10 @@ func (s *Server) handleDeleteAlias(w http.ResponseWriter, r *http.Request) {
 	source := r.PathValue("source")
 
 	if err := s.dnsRegistry.DeleteAlias(source); err != nil {
+		if os.IsNotExist(err) {
+			s.renderDNSPage(w, r, http.StatusBadRequest, "", "", "warning", "Alias not found")
+			return
+		}
 		s.renderDNSPage(w, r, http.StatusInternalServerError, "", "", "error", "Failed to delete alias")
 		return
 	}

@@ -75,11 +75,18 @@ func (r *Registry) DeleteAlias(source string) error {
 		return err
 	}
 
+	found := false
 	var filtered []Alias
 	for _, alias := range aliases {
-		if alias.Source != source {
-			filtered = append(filtered, alias)
+		if alias.Source == source {
+			found = true
+			continue
 		}
+		filtered = append(filtered, alias)
+	}
+
+	if !found {
+		return os.ErrNotExist
 	}
 
 	return r.saveAliases(filtered)
