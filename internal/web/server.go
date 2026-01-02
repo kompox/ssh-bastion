@@ -74,6 +74,10 @@ func Run(addr string) error {
 }
 
 func (s *Server) handleKeysPage(w http.ResponseWriter, r *http.Request) {
+	s.renderKeysPage(w, r, http.StatusOK, "", "")
+}
+
+func (s *Server) renderKeysPage(w http.ResponseWriter, r *http.Request, status int, formPublicKey, errMsg string) {
 	userDirID := auth.GetUserDirID(r)
 	email := auth.GetEmail(r)
 
@@ -85,11 +89,17 @@ func (s *Server) handleKeysPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]interface{}{
-		"Title": "SSH Keys",
-		"Email": email,
-		"Keys":  keys,
+		"Title":         "SSH Keys",
+		"Email":         email,
+		"Keys":          keys,
+		"Page":          "keys",
+		"Error":         errMsg,
+		"FormPublicKey": formPublicKey,
 	}
 
+	if status != http.StatusOK {
+		w.WriteHeader(status)
+	}
 	if err := s.templates.ExecuteTemplate(w, "layout.html", data); err != nil {
 		log.Printf("Template error: %v", err)
 	}
@@ -105,7 +115,7 @@ func (s *Server) handleAddKey(w http.ResponseWriter, r *http.Request) {
 
 	publicKey := r.FormValue("publicKey")
 	if _, err := s.keyRegistry.AddKey(userDirID, publicKey); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to add key: %v", err), http.StatusBadRequest)
+		s.renderKeysPage(w, r, http.StatusBadRequest, publicKey, fmt.Sprintf("Failed to add key: %v", err))
 		return
 	}
 
@@ -177,6 +187,10 @@ func (s *Server) handleDeleteKey(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleDNSPage(w http.ResponseWriter, r *http.Request) {
+	s.renderDNSPage(w, r, http.StatusOK, "", "", "")
+}
+
+func (s *Server) renderDNSPage(w http.ResponseWriter, r *http.Request, status int, formSource, formDestination, errMsg string) {
 	email := auth.GetEmail(r)
 
 	aliases, err := s.dnsRegistry.ListAliases()
@@ -187,11 +201,18 @@ func (s *Server) handleDNSPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]interface{}{
-		"Title":   "DNS Aliases",
-		"Email":   email,
-		"Aliases": aliases,
+		"Title":           "DNS Aliases",
+		"Email":           email,
+		"Aliases":         aliases,
+		"Page":            "dns",
+		"Error":           errMsg,
+		"FormSource":      formSource,
+		"FormDestination": formDestination,
 	}
 
+	if status != http.StatusOK {
+		w.WriteHeader(status)
+	}
 	if err := s.templates.ExecuteTemplate(w, "layout.html", data); err != nil {
 		log.Printf("Template error: %v", err)
 	}
@@ -207,7 +228,7 @@ func (s *Server) handleAddAlias(w http.ResponseWriter, r *http.Request) {
 	destination := r.FormValue("destination")
 
 	if err := s.dnsRegistry.AddAlias(source, destination); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to add alias: %v", err), http.StatusBadRequest)
+		s.renderDNSPage(w, r, http.StatusBadRequest, source, destination, fmt.Sprintf("Failed to add alias: %v", err))
 		return
 	}
 

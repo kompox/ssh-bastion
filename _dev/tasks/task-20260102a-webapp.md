@@ -2,7 +2,7 @@
 id: task-20260102a-webapp
 title: Implement ssh-bastion web app (keys + DNS)
 status: stable
-updated: 2026-01-02T16:24:42Z
+updated: 2026-01-02T16:58:38Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Task: Implement ssh-bastion web app (keys + DNS)
@@ -85,12 +85,15 @@ Implement the `ssh-bastion web` executable described in the design overview:
   - [x] SSH Public Keys page (list/add/toggle/delete)
   - [x] DNS Aliases page (list/add/delete)
   - [x] Display user email from header (do not store by email)
+  - [x] Fix template name collision that prevented DNS page rendering
 
 - [x] Testing + manual verification
   - [x] Unit tests: key parsing + fingerprinting + atomic writes
   - [x] Unit tests: alias validation + dnsmasq conf generation
   - [x] Fix action URLs for fingerprints containing `/` (URL-encode in template + decode in handler)
   - [x] Add regression test for URL-encoded fingerprint actions
+  - [x] Render Add Key/Add Alias errors inline (avoid plain error pages)
+  - [x] Add regression tests for inline form errors
   - [x] Manual run notes (how to set headers + data dir for local testing)
 
 ## Progress
@@ -121,6 +124,12 @@ Implement the `ssh-bastion web` executable described in the design overview:
 - 2026-01-02T16:24:42Z
   - Fix key Disable/Delete actions for fingerprints containing `/` by URL-encoding fingerprints in templates and decoding in handlers
   - Add regression test for URL-encoded fingerprint action URLs
+  - Run full test suite (passing)
+
+- 2026-01-02T16:58:38Z
+  - Fix DNS page rendering by removing shared template name collisions
+  - Improve UX: render Add Alias/Add Key errors inline and preserve form inputs
+  - Add regression tests for DNS/keys inline error rendering
   - Run full test suite (passing)
 
 ## References

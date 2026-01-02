@@ -1,12 +1,15 @@
-{{define "content"}}
+{{define "keys_content"}}
 <h1>SSH Public Keys</h1>
 
 <article>
     <header><strong>Add New Key</strong></header>
+    {{if .Error}}
+    <p><strong>{{.Error}}</strong></p>
+    {{end}}
     <form method="POST" action="/keys">
         <label>
             Public Key
-            <textarea name="publicKey" rows="5" placeholder="ssh-rsa AAAAB3NzaC1..." required></textarea>
+            <textarea name="publicKey" rows="5" placeholder="ssh-rsa AAAAB3NzaC1..." required>{{.FormPublicKey}}</textarea>
         </label>
         <button type="submit">Add Key</button>
     </form>

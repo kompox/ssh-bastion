@@ -44,6 +44,7 @@ func TestKeysTemplate_URLencodesFingerprintInActions(t *testing.T) {
 	data := map[string]any{
 		"Title": "SSH Keys",
 		"Email": "test@example.com",
+		"Page":  "keys",
 		"Keys": []*keys.Key{{
 			Fingerprint: fingerprint,
 			Enabled:     true,

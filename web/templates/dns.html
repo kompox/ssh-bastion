@@ -1,16 +1,19 @@
-{{define "content"}}
+{{define "dns_content"}}
 <h1>DNS Aliases</h1>
 
 <article>
     <header><strong>Add New Alias</strong></header>
+    {{if .Error}}
+    <p><strong>{{.Error}}</strong></p>
+    {{end}}
     <form method="POST" action="/dns">
         <label>
             Source FQDN
-            <input type="text" name="source" placeholder="gitea.example.com" required>
+            <input type="text" name="source" placeholder="gitea.example.com" value="{{.FormSource}}" required>
         </label>
         <label>
             Destination FQDN
-            <input type="text" name="destination" placeholder="gitea.gitea.svc.cluster.local" required>
+            <input type="text" name="destination" placeholder="gitea.gitea.svc.cluster.local" value="{{.FormDestination}}" required>
         </label>
         <button type="submit">Add Alias</button>
     </form>

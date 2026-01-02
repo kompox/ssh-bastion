@@ -19,7 +19,11 @@
         </ul>
     </nav>
     <main class="container">
-        {{template "content" .}}
+        {{if eq .Page "dns"}}
+            {{template "dns_content" .}}
+        {{else}}
+            {{template "keys_content" .}}
+        {{end}}
     </main>
 </body>
 </html>
