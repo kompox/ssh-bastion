@@ -50,6 +50,9 @@ func TestDeleteKey_MissingKey_RendersPageWithError(t *testing.T) {
 	if !strings.Contains(body, "<h1>SSH Public Keys</h1>") {
 		t.Fatalf("expected keys page HTML; got: %s", body)
 	}
+	if !strings.Contains(body, "class=\"flash flash-warning\"") {
+		t.Fatalf("expected flash warning banner; got: %s", body)
+	}
 	if !strings.Contains(body, "Key not found") {
 		t.Fatalf("expected inline error message; got: %s", body)
 	}

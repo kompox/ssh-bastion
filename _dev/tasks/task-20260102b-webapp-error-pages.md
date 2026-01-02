@@ -2,7 +2,7 @@
 id: task-20260102b-webapp-error-pages
 title: Improve web UX for errors (no plain error pages)
 status: done
-updated: 2026-01-02T18:44:19Z
+updated: 2026-01-02T19:47:19Z
 ---
 # Task: Improve web UX for errors (no plain error pages)
 
@@ -51,6 +51,16 @@ Remove “plain error text page” responses from user-facing flows and present 
 - 2026-01-02T18:44:19Z
   - Align delete-key missing behavior with enable/disable (`400 Key not found`)
   - Manually verify curl cases behave as intended
+
+- 2026-01-02T18:51:59Z
+  - Make error messages more prominent with a page-wide flash banner
+
+- 2026-01-02T19:37:05Z
+  - Move flash banner under forms (better visibility in flows)
+  - Remove flash title bar and add 4 kinds (success/error/warning/info)
+
+- 2026-01-02T19:47:19Z
+  - Manually verify flash banner placement and visibility in browser
 
 ## References
 

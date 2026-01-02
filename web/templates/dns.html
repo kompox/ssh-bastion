@@ -3,9 +3,6 @@
 
 <article>
     <header><strong>Add New Alias</strong></header>
-    {{if .Error}}
-    <p><strong>{{.Error}}</strong></p>
-    {{end}}
     <form method="POST" action="/dns">
         <label>
             Source FQDN
@@ -17,6 +14,11 @@
         </label>
         <button type="submit">Add Alias</button>
     </form>
+    {{if .FlashMessage}}
+    <article role="alert" class="flash flash-{{.FlashKind}}">
+        <p>{{.FlashMessage}}</p>
+    </article>
+    {{end}}
 </article>
 
 <h2>Current Aliases</h2>

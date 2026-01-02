@@ -3,9 +3,6 @@
 
 <article>
     <header><strong>Add New Key</strong></header>
-    {{if .Error}}
-    <p><strong>{{.Error}}</strong></p>
-    {{end}}
     <form method="POST" action="/keys">
         <label>
             Public Key
@@ -13,6 +10,11 @@
         </label>
         <button type="submit">Add Key</button>
     </form>
+    {{if .FlashMessage}}
+    <article role="alert" class="flash flash-{{.FlashKind}}">
+        <p>{{.FlashMessage}}</p>
+    </article>
+    {{end}}
 </article>
 
 <h2>Your Keys</h2>

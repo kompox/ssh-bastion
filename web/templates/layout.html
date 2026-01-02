@@ -6,6 +6,22 @@
     <title>{{.Title}} - SSH Bastion</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    <style>
+        .flash {
+            --flash-accent: var(--pico-primary);
+            border: var(--pico-border-width) solid var(--pico-border-color);
+            border-left: calc(var(--pico-border-width) * 4) solid var(--flash-accent);
+            border-radius: var(--pico-border-radius);
+            background: color-mix(in srgb, var(--flash-accent) 12%, var(--pico-card-background-color));
+            padding: var(--pico-block-spacing-vertical) var(--pico-block-spacing-horizontal);
+            margin-top: var(--pico-block-spacing-vertical);
+        }
+        .flash.flash-success { --flash-accent: var(--pico-ins-color); }
+        .flash.flash-error { --flash-accent: var(--pico-del-color); }
+        .flash.flash-warning { --flash-accent: var(--pico-mark-background-color); }
+        .flash.flash-info { --flash-accent: var(--pico-primary); }
+        .flash > :last-child { margin-bottom: 0; }
+    </style>
 </head>
 <body>
     <nav class="container">

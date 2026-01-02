@@ -60,6 +60,9 @@ func TestAddAlias_DuplicateSource_RendersPageWithError(t *testing.T) {
 	if !strings.Contains(body, "<h1>DNS Aliases</h1>") {
 		t.Fatalf("expected DNS page HTML; got: %s", body)
 	}
+	if !strings.Contains(body, "class=\"flash flash-error\"") {
+		t.Fatalf("expected flash error banner; got: %s", body)
+	}
 	if !strings.Contains(body, "Failed to add alias") {
 		t.Fatalf("expected inline error message; got: %s", body)
 	}

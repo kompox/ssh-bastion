@@ -56,6 +56,9 @@ func TestAddKey_InvalidKey_RendersPageWithError(t *testing.T) {
 	if !strings.Contains(body, "<h1>SSH Public Keys</h1>") {
 		t.Fatalf("expected keys page HTML; got: %s", body)
 	}
+	if !strings.Contains(body, "class=\"flash flash-error\"") {
+		t.Fatalf("expected flash error banner; got: %s", body)
+	}
 	if !strings.Contains(body, "Failed to add key") {
 		t.Fatalf("expected inline error message; got: %s", body)
 	}

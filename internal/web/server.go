@@ -75,12 +75,15 @@ func Run(addr string) error {
 }
 
 func (s *Server) handleKeysPage(w http.ResponseWriter, r *http.Request) {
-	s.renderKeysPage(w, r, http.StatusOK, "", "")
+	s.renderKeysPage(w, r, http.StatusOK, "", "", "")
 }
 
-func (s *Server) renderKeysPage(w http.ResponseWriter, r *http.Request, status int, formPublicKey, errMsg string) {
+func (s *Server) renderKeysPage(w http.ResponseWriter, r *http.Request, status int, formPublicKey, flashKind, flashMsg string) {
 	userDirID := auth.GetUserDirID(r)
 	email := auth.GetEmail(r)
+	if flashKind == "" {
+		flashKind = "error"
+	}
 
 	keysList := []*keys.Key{}
 	if s.keyRegistry != nil {
@@ -88,8 +91,8 @@ func (s *Server) renderKeysPage(w http.ResponseWriter, r *http.Request, status i
 		keysList, err = s.keyRegistry.ListKeys(userDirID)
 		if err != nil {
 			log.Printf("Error listing keys: %v", err)
-			if errMsg == "" {
-				errMsg = "Failed to list keys"
+			if flashMsg == "" {
+				flashMsg = "Failed to list keys"
 			}
 			keysList = []*keys.Key{}
 			if status == http.StatusOK {
@@ -103,7 +106,8 @@ func (s *Server) renderKeysPage(w http.ResponseWriter, r *http.Request, status i
 		"Email":         email,
 		"Keys":          keysList,
 		"Page":          "keys",
-		"Error":         errMsg,
+		"FlashKind":     flashKind,
+		"FlashMessage":  flashMsg,
 		"FormPublicKey": formPublicKey,
 	}
 
@@ -119,13 +123,13 @@ func (s *Server) handleAddKey(w http.ResponseWriter, r *http.Request) {
 	userDirID := auth.GetUserDirID(r)
 
 	if err := r.ParseForm(); err != nil {
-		s.renderKeysPage(w, r, http.StatusBadRequest, "", "Invalid form")
+		s.renderKeysPage(w, r, http.StatusBadRequest, "", "error", "Invalid form")
 		return
 	}
 
 	publicKey := r.FormValue("publicKey")
 	if _, err := s.keyRegistry.AddKey(userDirID, publicKey); err != nil {
-		s.renderKeysPage(w, r, http.StatusBadRequest, publicKey, fmt.Sprintf("Failed to add key: %v", err))
+		s.renderKeysPage(w, r, http.StatusBadRequest, publicKey, "error", fmt.Sprintf("Failed to add key: %v", err))
 		return
 	}
 
@@ -140,18 +144,20 @@ func (s *Server) handleEnableKey(w http.ResponseWriter, r *http.Request) {
 	userDirID := auth.GetUserDirID(r)
 	fingerprint, err := url.PathUnescape(r.PathValue("fingerprint"))
 	if err != nil {
-		s.renderKeysPage(w, r, http.StatusBadRequest, "", "Invalid fingerprint")
+		s.renderKeysPage(w, r, http.StatusBadRequest, "", "error", "Invalid fingerprint")
 		return
 	}
 
 	if err := s.keyRegistry.UpdateKeyStatus(userDirID, fingerprint, true); err != nil {
 		status := http.StatusInternalServerError
 		msg := "Failed to enable key"
+		kind := "error"
 		if os.IsNotExist(err) {
 			status = http.StatusBadRequest
 			msg = "Key not found"
+			kind = "warning"
 		}
-		s.renderKeysPage(w, r, status, "", msg)
+		s.renderKeysPage(w, r, status, "", kind, msg)
 		return
 	}
 
@@ -166,18 +172,20 @@ func (s *Server) handleDisableKey(w http.ResponseWriter, r *http.Request) {
 	userDirID := auth.GetUserDirID(r)
 	fingerprint, err := url.PathUnescape(r.PathValue("fingerprint"))
 	if err != nil {
-		s.renderKeysPage(w, r, http.StatusBadRequest, "", "Invalid fingerprint")
+		s.renderKeysPage(w, r, http.StatusBadRequest, "", "error", "Invalid fingerprint")
 		return
 	}
 
 	if err := s.keyRegistry.UpdateKeyStatus(userDirID, fingerprint, false); err != nil {
 		status := http.StatusInternalServerError
 		msg := "Failed to disable key"
+		kind := "error"
 		if os.IsNotExist(err) {
 			status = http.StatusBadRequest
 			msg = "Key not found"
+			kind = "warning"
 		}
-		s.renderKeysPage(w, r, status, "", msg)
+		s.renderKeysPage(w, r, status, "", kind, msg)
 		return
 	}
 
@@ -192,18 +200,20 @@ func (s *Server) handleDeleteKey(w http.ResponseWriter, r *http.Request) {
 	userDirID := auth.GetUserDirID(r)
 	fingerprint, err := url.PathUnescape(r.PathValue("fingerprint"))
 	if err != nil {
-		s.renderKeysPage(w, r, http.StatusBadRequest, "", "Invalid fingerprint")
+		s.renderKeysPage(w, r, http.StatusBadRequest, "", "error", "Invalid fingerprint")
 		return
 	}
 
 	if err := s.keyRegistry.DeleteKey(userDirID, fingerprint); err != nil {
 		status := http.StatusInternalServerError
 		msg := "Failed to delete key"
+		kind := "error"
 		if os.IsNotExist(err) {
 			status = http.StatusBadRequest
 			msg = "Key not found"
+			kind = "warning"
 		}
-		s.renderKeysPage(w, r, status, "", msg)
+		s.renderKeysPage(w, r, status, "", kind, msg)
 		return
 	}
 
@@ -215,11 +225,14 @@ func (s *Server) handleDeleteKey(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleDNSPage(w http.ResponseWriter, r *http.Request) {
-	s.renderDNSPage(w, r, http.StatusOK, "", "", "")
+	s.renderDNSPage(w, r, http.StatusOK, "", "", "", "")
 }
 
-func (s *Server) renderDNSPage(w http.ResponseWriter, r *http.Request, status int, formSource, formDestination, errMsg string) {
+func (s *Server) renderDNSPage(w http.ResponseWriter, r *http.Request, status int, formSource, formDestination, flashKind, flashMsg string) {
 	email := auth.GetEmail(r)
+	if flashKind == "" {
+		flashKind = "error"
+	}
 
 	aliases := []dns.Alias{}
 	if s.dnsRegistry != nil {
@@ -227,8 +240,8 @@ func (s *Server) renderDNSPage(w http.ResponseWriter, r *http.Request, status in
 		aliases, err = s.dnsRegistry.ListAliases()
 		if err != nil {
 			log.Printf("Error listing aliases: %v", err)
-			if errMsg == "" {
-				errMsg = "Failed to list aliases"
+			if flashMsg == "" {
+				flashMsg = "Failed to list aliases"
 			}
 			aliases = []dns.Alias{}
 			if status == http.StatusOK {
@@ -242,7 +255,8 @@ func (s *Server) renderDNSPage(w http.ResponseWriter, r *http.Request, status in
 		"Email":           email,
 		"Aliases":         aliases,
 		"Page":            "dns",
-		"Error":           errMsg,
+		"FlashKind":       flashKind,
+		"FlashMessage":    flashMsg,
 		"FormSource":      formSource,
 		"FormDestination": formDestination,
 	}
@@ -257,7 +271,7 @@ func (s *Server) renderDNSPage(w http.ResponseWriter, r *http.Request, status in
 
 func (s *Server) handleAddAlias(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		s.renderDNSPage(w, r, http.StatusBadRequest, "", "", "Invalid form")
+		s.renderDNSPage(w, r, http.StatusBadRequest, "", "", "error", "Invalid form")
 		return
 	}
 
@@ -265,7 +279,7 @@ func (s *Server) handleAddAlias(w http.ResponseWriter, r *http.Request) {
 	destination := r.FormValue("destination")
 
 	if err := s.dnsRegistry.AddAlias(source, destination); err != nil {
-		s.renderDNSPage(w, r, http.StatusBadRequest, source, destination, fmt.Sprintf("Failed to add alias: %v", err))
+		s.renderDNSPage(w, r, http.StatusBadRequest, source, destination, "error", fmt.Sprintf("Failed to add alias: %v", err))
 		return
 	}
 
@@ -280,7 +294,7 @@ func (s *Server) handleDeleteAlias(w http.ResponseWriter, r *http.Request) {
 	source := r.PathValue("source")
 
 	if err := s.dnsRegistry.DeleteAlias(source); err != nil {
-		s.renderDNSPage(w, r, http.StatusInternalServerError, "", "", "Failed to delete alias")
+		s.renderDNSPage(w, r, http.StatusInternalServerError, "", "", "error", "Failed to delete alias")
 		return
 	}
 
