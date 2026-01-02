@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/kompox/ssh-bastion/internal/storage"
@@ -23,12 +24,49 @@ func NewRegistry(store *storage.Store) *Registry {
 	return &Registry{store: store}
 }
 
+var dns1123LabelRe = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
+
+func validateDNS1123Subdomain(value, fieldName string) error {
+	// Roughly follows Kubernetes DNS-1123 subdomain rules:
+	// - max 253 chars
+	// - labels separated by '.', each 1-63 chars
+	// - lowercase alphanumeric or '-', start/end with alphanumeric
+	if value == "" {
+		return fmt.Errorf("%s must be non-empty", fieldName)
+	}
+	if len(value) > 253 {
+		return fmt.Errorf("%s must be no more than 253 characters", fieldName)
+	}
+	if strings.HasPrefix(value, ".") || strings.HasSuffix(value, ".") {
+		return fmt.Errorf("%s must not start or end with a dot", fieldName)
+	}
+	labels := strings.Split(value, ".")
+	for _, label := range labels {
+		if label == "" {
+			return fmt.Errorf("%s must not contain empty labels", fieldName)
+		}
+		if len(label) > 63 {
+			return fmt.Errorf("%s label %q must be no more than 63 characters", fieldName, label)
+		}
+		if !dns1123LabelRe.MatchString(label) {
+			return fmt.Errorf("%s label %q must match DNS-1123 (lowercase alphanumeric or '-', start/end alphanumeric)", fieldName, label)
+		}
+	}
+	return nil
+}
+
 func (r *Registry) AddAlias(source, destination string) error {
 	source = strings.TrimSpace(source)
 	destination = strings.TrimSpace(destination)
 
 	if source == "" || destination == "" {
 		return fmt.Errorf("source and destination must be non-empty")
+	}
+	if err := validateDNS1123Subdomain(source, "source"); err != nil {
+		return err
+	}
+	if err := validateDNS1123Subdomain(destination, "destination"); err != nil {
+		return err
 	}
 
 	aliases, err := r.ListAliases()

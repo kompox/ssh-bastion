@@ -57,3 +57,54 @@ func TestDeleteAlias_MissingAlias_RendersPageWithError(t *testing.T) {
 		t.Fatalf("expected inline error message; got: %s", body)
 	}
 }
+
+func TestDeleteAlias_SourceWithEscapedChars_DeletesAndRedirects(t *testing.T) {
+	root := findRepoRoot(t)
+
+	tmp := t.TempDir()
+	store := storage.New(tmp)
+	dnsRegistry := dns.NewRegistry(store)
+
+	// DNS-1123 subdomain (valid) but request path uses percent-encoding.
+	source := "foo-bar.example.com"
+	if err := dnsRegistry.AddAlias(source, "dest.example.com"); err != nil {
+		t.Fatalf("seed alias: %v", err)
+	}
+
+	tmpl, err := template.ParseGlob(filepath.Join(root, "web", "templates", "*.html"))
+	if err != nil {
+		t.Fatalf("parse templates: %v", err)
+	}
+
+	srv := &Server{
+		dnsRegistry: dnsRegistry,
+		templates:   tmpl,
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /dns/{source}/delete", srv.handleDeleteAlias)
+
+	cfg := &config.Config{OverrideUserID: "test-user", OverrideEmail: "test@example.com", UserIDHeader: "X", EmailHeader: "Y"}
+	authMw := auth.NewMiddleware(cfg)
+	handler := authMw.Authenticate(mux)
+
+	req := httptest.NewRequest("POST", "http://example.com/dns/foo%2Dbar.example.com/delete", nil)
+	res := httptest.NewRecorder()
+
+	handler.ServeHTTP(res, req)
+
+	if res.Code != http.StatusSeeOther {
+		t.Fatalf("expected 303; got %d", res.Code)
+	}
+	if loc := res.Header().Get("Location"); loc != "/dns" {
+		t.Fatalf("expected redirect to /dns; got %q", loc)
+	}
+
+	aliases, err := dnsRegistry.ListAliases()
+	if err != nil {
+		t.Fatalf("list aliases: %v", err)
+	}
+	if len(aliases) != 0 {
+		t.Fatalf("expected alias to be deleted; got %v", aliases)
+	}
+}

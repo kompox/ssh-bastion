@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/kompox/ssh-bastion/internal/auth"
 	"github.com/kompox/ssh-bastion/internal/config"
@@ -291,7 +292,22 @@ func (s *Server) handleAddAlias(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleDeleteAlias(w http.ResponseWriter, r *http.Request) {
-	source := r.PathValue("source")
+	// Note: r.PathValue("source") may already be unescaped. If the decoded value contains
+	// a literal '%', calling url.PathUnescape again would fail. Decode from EscapedPath
+	// so we unescape exactly once.
+	escapedPath := r.URL.EscapedPath()
+	const prefix = "/dns/"
+	const suffix = "/delete"
+	if !strings.HasPrefix(escapedPath, prefix) || !strings.HasSuffix(escapedPath, suffix) {
+		s.renderDNSPage(w, r, http.StatusBadRequest, "", "", "error", "Invalid source")
+		return
+	}
+	escapedSource := strings.TrimSuffix(strings.TrimPrefix(escapedPath, prefix), suffix)
+	source, err := url.PathUnescape(escapedSource)
+	if err != nil || source == "" {
+		s.renderDNSPage(w, r, http.StatusBadRequest, "", "", "error", "Invalid source")
+		return
+	}
 
 	if err := s.dnsRegistry.DeleteAlias(source); err != nil {
 		if os.IsNotExist(err) {

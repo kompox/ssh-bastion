@@ -38,7 +38,7 @@
             <td><code>{{.Source}}</code></td>
             <td><code>{{.Destination}}</code></td>
             <td>
-                <form method="POST" action="/dns/{{.Source}}/delete" style="display:inline">
+                <form method="POST" action="/dns/{{.Source | urlquery}}/delete" style="display:inline">
                     <button type="submit" class="contrast">Delete</button>
                 </form>
             </td>

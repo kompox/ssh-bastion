@@ -135,3 +135,30 @@ func TestEmptyAliasRejected(t *testing.T) {
 		t.Error("Expected error for empty destination")
 	}
 }
+
+func TestAddAlias_InvalidDNS1123Rejected(t *testing.T) {
+	tmpDir := t.TempDir()
+	store := storage.New(tmpDir)
+	registry := NewRegistry(store)
+
+	tests := []struct {
+		name        string
+		source      string
+		destination string
+	}{
+		{name: "uppercase source", source: "Gitea.example.com", destination: "dest.example.com"},
+		{name: "underscore source", source: "bad_name.example.com", destination: "dest.example.com"},
+		{name: "leading dot", source: ".example.com", destination: "dest.example.com"},
+		{name: "trailing dot", source: "example.com.", destination: "dest.example.com"},
+		{name: "empty label", source: "a..b", destination: "dest.example.com"},
+		{name: "uppercase destination", source: "source.example.com", destination: "Dest.example.com"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := registry.AddAlias(tt.source, tt.destination); err == nil {
+				t.Fatalf("expected validation error for source=%q destination=%q", tt.source, tt.destination)
+			}
+		})
+	}
+}
