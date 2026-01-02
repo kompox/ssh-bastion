@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 
 	"github.com/kompox/ssh-bastion/internal/auth"
@@ -81,17 +82,26 @@ func (s *Server) renderKeysPage(w http.ResponseWriter, r *http.Request, status i
 	userDirID := auth.GetUserDirID(r)
 	email := auth.GetEmail(r)
 
-	keys, err := s.keyRegistry.ListKeys(userDirID)
-	if err != nil {
-		http.Error(w, "Failed to list keys", http.StatusInternalServerError)
-		log.Printf("Error listing keys: %v", err)
-		return
+	keysList := []*keys.Key{}
+	if s.keyRegistry != nil {
+		var err error
+		keysList, err = s.keyRegistry.ListKeys(userDirID)
+		if err != nil {
+			log.Printf("Error listing keys: %v", err)
+			if errMsg == "" {
+				errMsg = "Failed to list keys"
+			}
+			keysList = []*keys.Key{}
+			if status == http.StatusOK {
+				status = http.StatusInternalServerError
+			}
+		}
 	}
 
 	data := map[string]interface{}{
 		"Title":         "SSH Keys",
 		"Email":         email,
-		"Keys":          keys,
+		"Keys":          keysList,
 		"Page":          "keys",
 		"Error":         errMsg,
 		"FormPublicKey": formPublicKey,
@@ -109,7 +119,7 @@ func (s *Server) handleAddKey(w http.ResponseWriter, r *http.Request) {
 	userDirID := auth.GetUserDirID(r)
 
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Invalid form", http.StatusBadRequest)
+		s.renderKeysPage(w, r, http.StatusBadRequest, "", "Invalid form")
 		return
 	}
 
@@ -130,12 +140,18 @@ func (s *Server) handleEnableKey(w http.ResponseWriter, r *http.Request) {
 	userDirID := auth.GetUserDirID(r)
 	fingerprint, err := url.PathUnescape(r.PathValue("fingerprint"))
 	if err != nil {
-		http.Error(w, "Invalid fingerprint", http.StatusBadRequest)
+		s.renderKeysPage(w, r, http.StatusBadRequest, "", "Invalid fingerprint")
 		return
 	}
 
 	if err := s.keyRegistry.UpdateKeyStatus(userDirID, fingerprint, true); err != nil {
-		http.Error(w, "Failed to enable key", http.StatusInternalServerError)
+		status := http.StatusInternalServerError
+		msg := "Failed to enable key"
+		if os.IsNotExist(err) {
+			status = http.StatusBadRequest
+			msg = "Key not found"
+		}
+		s.renderKeysPage(w, r, status, "", msg)
 		return
 	}
 
@@ -150,12 +166,18 @@ func (s *Server) handleDisableKey(w http.ResponseWriter, r *http.Request) {
 	userDirID := auth.GetUserDirID(r)
 	fingerprint, err := url.PathUnescape(r.PathValue("fingerprint"))
 	if err != nil {
-		http.Error(w, "Invalid fingerprint", http.StatusBadRequest)
+		s.renderKeysPage(w, r, http.StatusBadRequest, "", "Invalid fingerprint")
 		return
 	}
 
 	if err := s.keyRegistry.UpdateKeyStatus(userDirID, fingerprint, false); err != nil {
-		http.Error(w, "Failed to disable key", http.StatusInternalServerError)
+		status := http.StatusInternalServerError
+		msg := "Failed to disable key"
+		if os.IsNotExist(err) {
+			status = http.StatusBadRequest
+			msg = "Key not found"
+		}
+		s.renderKeysPage(w, r, status, "", msg)
 		return
 	}
 
@@ -170,12 +192,12 @@ func (s *Server) handleDeleteKey(w http.ResponseWriter, r *http.Request) {
 	userDirID := auth.GetUserDirID(r)
 	fingerprint, err := url.PathUnescape(r.PathValue("fingerprint"))
 	if err != nil {
-		http.Error(w, "Invalid fingerprint", http.StatusBadRequest)
+		s.renderKeysPage(w, r, http.StatusBadRequest, "", "Invalid fingerprint")
 		return
 	}
 
 	if err := s.keyRegistry.DeleteKey(userDirID, fingerprint); err != nil {
-		http.Error(w, "Failed to delete key", http.StatusInternalServerError)
+		s.renderKeysPage(w, r, http.StatusInternalServerError, "", "Failed to delete key")
 		return
 	}
 
@@ -193,11 +215,20 @@ func (s *Server) handleDNSPage(w http.ResponseWriter, r *http.Request) {
 func (s *Server) renderDNSPage(w http.ResponseWriter, r *http.Request, status int, formSource, formDestination, errMsg string) {
 	email := auth.GetEmail(r)
 
-	aliases, err := s.dnsRegistry.ListAliases()
-	if err != nil {
-		http.Error(w, "Failed to list aliases", http.StatusInternalServerError)
-		log.Printf("Error listing aliases: %v", err)
-		return
+	aliases := []dns.Alias{}
+	if s.dnsRegistry != nil {
+		var err error
+		aliases, err = s.dnsRegistry.ListAliases()
+		if err != nil {
+			log.Printf("Error listing aliases: %v", err)
+			if errMsg == "" {
+				errMsg = "Failed to list aliases"
+			}
+			aliases = []dns.Alias{}
+			if status == http.StatusOK {
+				status = http.StatusInternalServerError
+			}
+		}
 	}
 
 	data := map[string]interface{}{
@@ -220,7 +251,7 @@ func (s *Server) renderDNSPage(w http.ResponseWriter, r *http.Request, status in
 
 func (s *Server) handleAddAlias(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Invalid form", http.StatusBadRequest)
+		s.renderDNSPage(w, r, http.StatusBadRequest, "", "", "Invalid form")
 		return
 	}
 
@@ -243,7 +274,7 @@ func (s *Server) handleDeleteAlias(w http.ResponseWriter, r *http.Request) {
 	source := r.PathValue("source")
 
 	if err := s.dnsRegistry.DeleteAlias(source); err != nil {
-		http.Error(w, "Failed to delete alias", http.StatusInternalServerError)
+		s.renderDNSPage(w, r, http.StatusInternalServerError, "", "", "Failed to delete alias")
 		return
 	}
 

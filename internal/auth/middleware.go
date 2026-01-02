@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"crypto/md5"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -39,7 +40,7 @@ func (m *Middleware) Authenticate(next http.Handler) http.Handler {
 		}
 
 		if userID == "" || email == "" {
-			http.Error(w, "Unauthorized: missing user identity", http.StatusUnauthorized)
+			writeUnauthorized(w, r, m.cfg.UserIDHeader, m.cfg.EmailHeader)
 			return
 		}
 
@@ -51,6 +52,18 @@ func (m *Middleware) Authenticate(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func writeUnauthorized(w http.ResponseWriter, r *http.Request, userIDHeader, emailHeader string) {
+	accept := r.Header.Get("Accept")
+	if accept == "" || strings.Contains(accept, "text/html") || strings.Contains(accept, "*/*") {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = fmt.Fprintf(w, "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Unauthorized</title></head><body><h1>Unauthorized</h1><p>Missing user identity headers.</p><ul><li>%s</li><li>%s</li></ul><p>For local testing, set both <code>SSHBASTION_AUTH_OVERRIDE_USER_ID</code> and <code>SSHBASTION_AUTH_OVERRIDE_EMAIL</code> (test mode only).</p></body></html>", userIDHeader, emailHeader)
+		return
+	}
+
+	http.Error(w, "Unauthorized: missing user identity", http.StatusUnauthorized)
 }
 
 func deriveUserDirID(userID string) string {
