@@ -109,6 +109,13 @@ Implement the `ssh-bastion web` executable described in the design overview:
   - Write unit tests for storage, keys, and DNS packages
   - All tests passing
 
+- 2026-01-02T13:22:00Z
+  - Add test mode for browser testing
+  - Add `SSHBASTION_AUTH_OVERRIDE_USER_ID` and `SSHBASTION_AUTH_OVERRIDE_EMAIL` environment variables
+  - When both are set, app ignores request headers and uses override values
+  - Update design doc and manual testing documentation
+  - Useful for local development and integration testing
+
 ## References
 
 - [design-overview] - Design overview document

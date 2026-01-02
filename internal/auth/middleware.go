@@ -28,8 +28,15 @@ func NewMiddleware(cfg *config.Config) *Middleware {
 
 func (m *Middleware) Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userID := strings.TrimSpace(r.Header.Get(m.cfg.UserIDHeader))
-		email := strings.TrimSpace(r.Header.Get(m.cfg.EmailHeader))
+		var userID, email string
+
+		if m.cfg.OverrideUserID != "" && m.cfg.OverrideEmail != "" {
+			userID = m.cfg.OverrideUserID
+			email = m.cfg.OverrideEmail
+		} else {
+			userID = strings.TrimSpace(r.Header.Get(m.cfg.UserIDHeader))
+			email = strings.TrimSpace(r.Header.Get(m.cfg.EmailHeader))
+		}
 
 		if userID == "" || email == "" {
 			http.Error(w, "Unauthorized: missing user identity", http.StatusUnauthorized)

@@ -11,10 +11,12 @@ const (
 )
 
 type Config struct {
-	DataDir      string
-	AuthMode     string
-	UserIDHeader string
-	EmailHeader  string
+	DataDir        string
+	AuthMode       string
+	UserIDHeader   string
+	EmailHeader    string
+	OverrideUserID string
+	OverrideEmail  string
 }
 
 func Load() (*Config, error) {
@@ -37,6 +39,9 @@ func Load() (*Config, error) {
 	default:
 		return nil, fmt.Errorf("invalid SSHBASTION_AUTH_MODE: %s (must be easy_auth or oauth2_proxy)", cfg.AuthMode)
 	}
+
+	cfg.OverrideUserID = getEnv("SSHBASTION_AUTH_OVERRIDE_USER_ID", "")
+	cfg.OverrideEmail = getEnv("SSHBASTION_AUTH_OVERRIDE_EMAIL", "")
 
 	return cfg, nil
 }

@@ -221,11 +221,23 @@ All configuration is via environment variables (no config files).
 - `SSHBASTION_AUTH_EMAIL_HEADER`
   - Default: `X-MS-CLIENT-PRINCIPAL-NAME` (when `easy_auth`), `X-Auth-Request-Email` (when `oauth2_proxy`)
   - Purpose: request header name containing the user email (UI display only).
+- `SSHBASTION_AUTH_OVERRIDE_USER_ID`
+  - Default: (empty)
+  - Purpose: when set, uses this value instead of reading from the header. For testing/development only.
+- `SSHBASTION_AUTH_OVERRIDE_EMAIL`
+  - Default: (empty)
+  - Purpose: when set, uses this value instead of reading from the header. For testing/development only.
 
 Validation rules (MVP):
 
 - At startup: `SSHBASTION_DATA_DIR` must be non-empty.
 - Per request: if resolved user ID or email is empty after trimming, return `401`.
+
+Test mode:
+
+- When `SSHBASTION_AUTH_OVERRIDE_USER_ID` and `SSHBASTION_AUTH_OVERRIDE_EMAIL` are set, the app ignores request headers and uses these values for all requests.
+- This allows browser testing without a reverse proxy or header injection tools.
+- **Security note**: These overrides should only be used in development/testing environments. Do not set them in production.
 
 ## Storage layout (file-based)
 

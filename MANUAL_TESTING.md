@@ -21,10 +21,21 @@ mkdir -p _tmp/data
 
 ### 2. Set environment variables
 
+For production/testing with real auth proxy:
 ```bash
 export SSHBASTION_DATA_DIR="_tmp/data"
 export SSHBASTION_AUTH_MODE="easy_auth"
 ```
+
+**For development/testing without an auth proxy (browser testing):**
+```bash
+export SSHBASTION_DATA_DIR="_tmp/data"
+export SSHBASTION_AUTH_MODE="easy_auth"
+export SSHBASTION_AUTH_OVERRIDE_USER_ID="test-user-123"
+export SSHBASTION_AUTH_OVERRIDE_EMAIL="user@example.com"
+```
+
+⚠️ **Security Warning**: The override environment variables should ONLY be used in development/testing. Never set them in production.
 
 ### 3. Run the web server
 
@@ -34,7 +45,18 @@ export SSHBASTION_AUTH_MODE="easy_auth"
 
 The server will start on `http://localhost:8080`.
 
-### 4. Test with curl (simulating auth headers)
+If you set the override environment variables, you can now access the application directly in your browser at `http://localhost:8080/` without needing to inject headers.
+
+### 4. Browser Testing (with override mode)
+
+When `SSHBASTION_AUTH_OVERRIDE_USER_ID` and `SSHBASTION_AUTH_OVERRIDE_EMAIL` are set:
+
+1. Open your browser and navigate to `http://localhost:8080/`
+2. You should see the SSH Keys page
+3. You can add keys, manage them, and navigate to the DNS Aliases page
+4. All operations will be associated with the test user specified in the environment variables
+
+### 5. Test with curl (simulating auth headers)
 
 Since the application expects authentication headers, you need to provide them:
 
@@ -78,7 +100,7 @@ curl -H "X-Auth-Request-User: test-user-123" \
      http://localhost:8080/
 ```
 
-### 5. Using a browser with a proxy
+### 6. Using a browser with a header injection tool (without override mode)
 
 For browser testing, you can use a tool like [ModHeader](https://modheader.com/) browser extension to inject the required headers:
 
@@ -152,3 +174,7 @@ _tmp/data/
 | `SSHBASTION_AUTH_MODE` | `easy_auth` | - | Authentication mode |
 | `SSHBASTION_AUTH_USER_ID_HEADER` | `X-MS-CLIENT-PRINCIPAL-ID` | `X-Auth-Request-User` | Header containing user ID |
 | `SSHBASTION_AUTH_EMAIL_HEADER` | `X-MS-CLIENT-PRINCIPAL-NAME` | `X-Auth-Request-Email` | Header containing email |
+| `SSHBASTION_AUTH_OVERRIDE_USER_ID` | (empty) | (empty) | **TEST MODE**: Override user ID (ignores headers) |
+| `SSHBASTION_AUTH_OVERRIDE_EMAIL` | (empty) | (empty) | **TEST MODE**: Override email (ignores headers) |
+
+**Note on Test Mode**: When both `SSHBASTION_AUTH_OVERRIDE_USER_ID` and `SSHBASTION_AUTH_OVERRIDE_EMAIL` are set, the application ignores all incoming authentication headers and uses these values for all requests. This is useful for local development and integration testing but should never be used in production.

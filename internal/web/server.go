@@ -66,6 +66,9 @@ func Run(addr string) error {
 	log.Printf("Starting server on %s", addr)
 	log.Printf("Data directory: %s", cfg.DataDir)
 	log.Printf("Auth mode: %s", cfg.AuthMode)
+	if cfg.OverrideUserID != "" && cfg.OverrideEmail != "" {
+		log.Printf("⚠️  TEST MODE: Using auth overrides (user: %s, email: %s)", cfg.OverrideUserID, cfg.OverrideEmail)
+	}
 
 	return http.ListenAndServe(addr, handler)
 }
