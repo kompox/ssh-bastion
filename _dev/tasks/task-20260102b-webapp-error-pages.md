@@ -2,7 +2,7 @@
 id: task-20260102b-webapp-error-pages
 title: Improve web UX for errors (no plain error pages)
 status: done
-updated: 2026-01-02T18:11:28Z
+updated: 2026-01-02T18:44:19Z
 ---
 # Task: Improve web UX for errors (no plain error pages)
 
@@ -47,6 +47,10 @@ Remove “plain error text page” responses from user-facing flows and present 
   - Reduce remaining plain `http.Error(...)` responses in web flows
   - Add regression tests and confirm `make test` passes
   - Fix a test compilation failure (duplicate `package auth` line)
+
+- 2026-01-02T18:44:19Z
+  - Align delete-key missing behavior with enable/disable (`400 Key not found`)
+  - Manually verify curl cases behave as intended
 
 ## References
 

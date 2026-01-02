@@ -197,7 +197,13 @@ func (s *Server) handleDeleteKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.keyRegistry.DeleteKey(userDirID, fingerprint); err != nil {
-		s.renderKeysPage(w, r, http.StatusInternalServerError, "", "Failed to delete key")
+		status := http.StatusInternalServerError
+		msg := "Failed to delete key"
+		if os.IsNotExist(err) {
+			status = http.StatusBadRequest
+			msg = "Key not found"
+		}
+		s.renderKeysPage(w, r, status, "", msg)
 		return
 	}
 

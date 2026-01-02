@@ -101,11 +101,21 @@ func (r *Registry) UpdateKeyStatus(userDirID, fingerprint string, enabled bool) 
 }
 
 func (r *Registry) DeleteKey(userDirID, fingerprint string) error {
+	// Match UpdateKeyStatus behavior: deleting a non-existent key should be an error
+	// so the caller can present a meaningful message.
+	if _, err := r.getKey(userDirID, fingerprint); err != nil {
+		return err
+	}
+
 	filename := fingerprintToFilename(fingerprint)
 	basePath := filepath.Join("users", userDirID, "keys", filename)
 
-	os.Remove(r.store.Path(basePath + ".json"))
-	os.Remove(r.store.Path(basePath + ".pub"))
+	if err := os.Remove(r.store.Path(basePath + ".json")); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	if err := os.Remove(r.store.Path(basePath + ".pub")); err != nil && !os.IsNotExist(err) {
+		return err
+	}
 
 	return nil
 }
