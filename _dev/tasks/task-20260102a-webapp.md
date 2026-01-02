@@ -1,7 +1,7 @@
 ---
 id: task-20260102a-webapp
 title: Implement ssh-bastion web app (keys + DNS)
-status: stable
+status: done
 updated: 2026-01-02T16:58:38Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
