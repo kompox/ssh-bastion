@@ -2,7 +2,7 @@
 id: design-overview
 title: kompox-ssh-bastion (design + implementation plan)
 status: stable
-updated: 2026-01-02T19:00:32Z
+updated: 2026-01-03T04:31:37Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: kompox-ssh-bastion (design + implementation plan)
@@ -227,6 +227,11 @@ All configuration is via environment variables (no config files).
 - `SSHBASTION_AUTH_OVERRIDE_EMAIL`
   - Default: (empty)
   - Purpose: when set, uses this value instead of reading from the header. For testing/development only.
+
+- `SSHBASTION_LOG_LEVEL`
+  - Values: `error` | `warn` | `info` | `debug`
+  - Default: `info`
+  - Purpose: controls server log verbosity.
 
 Validation rules (MVP):
 

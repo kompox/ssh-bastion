@@ -15,8 +15,37 @@ type Config struct {
 	AuthMode       string
 	UserIDHeader   string
 	EmailHeader    string
+	LogLevel       LogLevel
 	OverrideUserID string
 	OverrideEmail  string
+}
+
+type LogLevel int
+
+const (
+	LogLevelError LogLevel = iota
+	LogLevelWarn
+	LogLevelInfo
+	LogLevelDebug
+)
+
+func ParseLogLevel(value string) (LogLevel, error) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", "info":
+		return LogLevelInfo, nil
+	case "error":
+		return LogLevelError, nil
+	case "warn", "warning":
+		return LogLevelWarn, nil
+	case "debug":
+		return LogLevelDebug, nil
+	default:
+		return 0, fmt.Errorf("invalid SSHBASTION_LOG_LEVEL: %q (must be error|warn|info|debug)", value)
+	}
+}
+
+func (l LogLevel) Enabled(level LogLevel) bool {
+	return l >= level
 }
 
 func Load() (*Config, error) {
@@ -24,6 +53,12 @@ func Load() (*Config, error) {
 		DataDir:  getEnv("SSHBASTION_DATA_DIR", "/data"),
 		AuthMode: getEnv("SSHBASTION_AUTH_MODE", "easy_auth"),
 	}
+
+	logLevel, err := ParseLogLevel(getEnv("SSHBASTION_LOG_LEVEL", "info"))
+	if err != nil {
+		return nil, err
+	}
+	cfg.LogLevel = logLevel
 
 	if strings.TrimSpace(cfg.DataDir) == "" {
 		return nil, fmt.Errorf("SSHBASTION_DATA_DIR must be non-empty")

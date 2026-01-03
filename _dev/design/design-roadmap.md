@@ -9,19 +9,6 @@ assistedBy: github/copilot (vscode) gpt-5.2
 
 ## TODO
 
-### Web app: observability (logging)
-
-Task: [task-20260102d-webapp-observability] (status: todo)
-
-- Identify current logging gaps (e.g., template failures, silent best-effort behavior)
-- Define a minimal, consistent logging schema (prefixes/fields)
-- Log key events (avoid sensitive data):
-  - Auth decisions (without dumping raw headers)
-  - Key operations (fingerprint only; never key material)
-  - DNS operations (source/destination)
-- Add targeted tests if it’s practical; otherwise verify manually
-- Optionally document what operators should expect in logs
-
 ### Roles: admin and user
 
 - Introduce roles to control access levels
@@ -94,5 +81,16 @@ Task: [task-20260102d-webapp-observability] (status: todo)
   - Quick links to key design docs and task files
   - Minimal “how to run locally” notes (test mode + data dir)
 
+## DONE
 
-[task-20260102d-webapp-observability]: ../tasks/task-20260102d-webapp-observability.md
+### Web app: observability (logging)
+
+- Identify current logging gaps (e.g., template failures, silent best-effort behavior)
+- Define a minimal, consistent logging schema (prefixes/fields)
+- Log key events (avoid sensitive data):
+  - Auth decisions (without dumping raw headers)
+  - Key operations (fingerprint only; never key material)
+  - DNS operations (source/destination)
+- Add targeted tests if it’s practical; otherwise verify manually
+- Optionally document what operators should expect in logs
+- Task: [task-20260102d-webapp-observability](../tasks/task-20260102d-webapp-observability.md)

@@ -3,7 +3,6 @@ package web
 import (
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -65,12 +64,13 @@ func Run(addr string) error {
 
 	handler := authMw.Authenticate(mux)
 
-	log.Printf("Starting server on %s", addr)
-	log.Printf("Data directory: %s", cfg.DataDir)
-	log.Printf("Auth mode: %s", cfg.AuthMode)
-	if cfg.OverrideUserID != "" && cfg.OverrideEmail != "" {
-		log.Printf("⚠️  TEST MODE: Using auth overrides (user: %s, email: %s)", cfg.OverrideUserID, cfg.OverrideEmail)
-	}
+	testMode := cfg.OverrideUserID != "" && cfg.OverrideEmail != ""
+	srv.logInfo("web server starting",
+		"addr", addr,
+		"dataDir", cfg.DataDir,
+		"authMode", cfg.AuthMode,
+		"testMode", testMode,
+	)
 
 	return http.ListenAndServe(addr, handler)
 }
@@ -91,7 +91,12 @@ func (s *Server) renderKeysPage(w http.ResponseWriter, r *http.Request, status i
 		var err error
 		keysList, err = s.keyRegistry.ListKeys(userDirID)
 		if err != nil {
-			log.Printf("Error listing keys: %v", err)
+			s.logError(err, "list keys failed",
+				"op", "keys_list",
+				"userDirID", userDirID,
+				"method", r.Method,
+				"path", r.URL.Path,
+			)
 			if flashMsg == "" {
 				flashMsg = "Failed to list keys"
 			}
@@ -116,7 +121,14 @@ func (s *Server) renderKeysPage(w http.ResponseWriter, r *http.Request, status i
 		w.WriteHeader(status)
 	}
 	if err := s.templates.ExecuteTemplate(w, "layout.html", data); err != nil {
-		log.Printf("Template error: %v", err)
+		s.logError(err, "template execution failed",
+			"op", "template_execute",
+			"template", "layout.html",
+			"page", "keys",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", status,
+		)
 	}
 }
 
@@ -124,18 +136,44 @@ func (s *Server) handleAddKey(w http.ResponseWriter, r *http.Request) {
 	userDirID := auth.GetUserDirID(r)
 
 	if err := r.ParseForm(); err != nil {
+		s.logWarn("parse form failed",
+			"op", "key_add",
+			"userDirID", userDirID,
+			"method", r.Method,
+			"path", r.URL.Path,
+		)
 		s.renderKeysPage(w, r, http.StatusBadRequest, "", "error", "Invalid form")
 		return
 	}
 
 	publicKey := r.FormValue("publicKey")
-	if _, err := s.keyRegistry.AddKey(userDirID, publicKey); err != nil {
+	key, err := s.keyRegistry.AddKey(userDirID, publicKey)
+	if err != nil {
+		s.logWarn("add key failed",
+			"op", "key_add",
+			"userDirID", userDirID,
+			"method", r.Method,
+			"path", r.URL.Path,
+			"err", err,
+		)
 		s.renderKeysPage(w, r, http.StatusBadRequest, publicKey, "error", fmt.Sprintf("Failed to add key: %v", err))
 		return
 	}
 
+	s.logInfo("key added",
+		"op", "key_add",
+		"userDirID", userDirID,
+		"fingerprint", key.Fingerprint,
+		"method", r.Method,
+		"path", r.URL.Path,
+	)
+
 	if err := s.keyRegistry.RenderAuthorizedKeys(); err != nil {
-		log.Printf("Error rendering authorized_keys: %v", err)
+		s.logError(err, "render authorized_keys failed",
+			"op", "authorized_keys_render",
+			"method", r.Method,
+			"path", r.URL.Path,
+		)
 	}
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -145,6 +183,12 @@ func (s *Server) handleEnableKey(w http.ResponseWriter, r *http.Request) {
 	userDirID := auth.GetUserDirID(r)
 	fingerprint, err := url.PathUnescape(r.PathValue("fingerprint"))
 	if err != nil {
+		s.logWarn("invalid fingerprint",
+			"op", "key_enable",
+			"userDirID", userDirID,
+			"method", r.Method,
+			"path", r.URL.Path,
+		)
 		s.renderKeysPage(w, r, http.StatusBadRequest, "", "error", "Invalid fingerprint")
 		return
 	}
@@ -157,13 +201,40 @@ func (s *Server) handleEnableKey(w http.ResponseWriter, r *http.Request) {
 			status = http.StatusBadRequest
 			msg = "Key not found"
 			kind = "warning"
+			s.logWarn("enable key: not found",
+				"op", "key_enable",
+				"userDirID", userDirID,
+				"fingerprint", fingerprint,
+				"method", r.Method,
+				"path", r.URL.Path,
+			)
+		} else {
+			s.logError(err, "enable key failed",
+				"op", "key_enable",
+				"userDirID", userDirID,
+				"fingerprint", fingerprint,
+				"method", r.Method,
+				"path", r.URL.Path,
+			)
 		}
 		s.renderKeysPage(w, r, status, "", kind, msg)
 		return
 	}
 
+	s.logInfo("key enabled",
+		"op", "key_enable",
+		"userDirID", userDirID,
+		"fingerprint", fingerprint,
+		"method", r.Method,
+		"path", r.URL.Path,
+	)
+
 	if err := s.keyRegistry.RenderAuthorizedKeys(); err != nil {
-		log.Printf("Error rendering authorized_keys: %v", err)
+		s.logError(err, "render authorized_keys failed",
+			"op", "authorized_keys_render",
+			"method", r.Method,
+			"path", r.URL.Path,
+		)
 	}
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -173,6 +244,12 @@ func (s *Server) handleDisableKey(w http.ResponseWriter, r *http.Request) {
 	userDirID := auth.GetUserDirID(r)
 	fingerprint, err := url.PathUnescape(r.PathValue("fingerprint"))
 	if err != nil {
+		s.logWarn("invalid fingerprint",
+			"op", "key_disable",
+			"userDirID", userDirID,
+			"method", r.Method,
+			"path", r.URL.Path,
+		)
 		s.renderKeysPage(w, r, http.StatusBadRequest, "", "error", "Invalid fingerprint")
 		return
 	}
@@ -185,13 +262,40 @@ func (s *Server) handleDisableKey(w http.ResponseWriter, r *http.Request) {
 			status = http.StatusBadRequest
 			msg = "Key not found"
 			kind = "warning"
+			s.logWarn("disable key: not found",
+				"op", "key_disable",
+				"userDirID", userDirID,
+				"fingerprint", fingerprint,
+				"method", r.Method,
+				"path", r.URL.Path,
+			)
+		} else {
+			s.logError(err, "disable key failed",
+				"op", "key_disable",
+				"userDirID", userDirID,
+				"fingerprint", fingerprint,
+				"method", r.Method,
+				"path", r.URL.Path,
+			)
 		}
 		s.renderKeysPage(w, r, status, "", kind, msg)
 		return
 	}
 
+	s.logInfo("key disabled",
+		"op", "key_disable",
+		"userDirID", userDirID,
+		"fingerprint", fingerprint,
+		"method", r.Method,
+		"path", r.URL.Path,
+	)
+
 	if err := s.keyRegistry.RenderAuthorizedKeys(); err != nil {
-		log.Printf("Error rendering authorized_keys: %v", err)
+		s.logError(err, "render authorized_keys failed",
+			"op", "authorized_keys_render",
+			"method", r.Method,
+			"path", r.URL.Path,
+		)
 	}
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -201,6 +305,12 @@ func (s *Server) handleDeleteKey(w http.ResponseWriter, r *http.Request) {
 	userDirID := auth.GetUserDirID(r)
 	fingerprint, err := url.PathUnescape(r.PathValue("fingerprint"))
 	if err != nil {
+		s.logWarn("invalid fingerprint",
+			"op", "key_delete",
+			"userDirID", userDirID,
+			"method", r.Method,
+			"path", r.URL.Path,
+		)
 		s.renderKeysPage(w, r, http.StatusBadRequest, "", "error", "Invalid fingerprint")
 		return
 	}
@@ -213,13 +323,40 @@ func (s *Server) handleDeleteKey(w http.ResponseWriter, r *http.Request) {
 			status = http.StatusBadRequest
 			msg = "Key not found"
 			kind = "warning"
+			s.logWarn("delete key: not found",
+				"op", "key_delete",
+				"userDirID", userDirID,
+				"fingerprint", fingerprint,
+				"method", r.Method,
+				"path", r.URL.Path,
+			)
+		} else {
+			s.logError(err, "delete key failed",
+				"op", "key_delete",
+				"userDirID", userDirID,
+				"fingerprint", fingerprint,
+				"method", r.Method,
+				"path", r.URL.Path,
+			)
 		}
 		s.renderKeysPage(w, r, status, "", kind, msg)
 		return
 	}
 
+	s.logInfo("key deleted",
+		"op", "key_delete",
+		"userDirID", userDirID,
+		"fingerprint", fingerprint,
+		"method", r.Method,
+		"path", r.URL.Path,
+	)
+
 	if err := s.keyRegistry.RenderAuthorizedKeys(); err != nil {
-		log.Printf("Error rendering authorized_keys: %v", err)
+		s.logError(err, "render authorized_keys failed",
+			"op", "authorized_keys_render",
+			"method", r.Method,
+			"path", r.URL.Path,
+		)
 	}
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -240,7 +377,11 @@ func (s *Server) renderDNSPage(w http.ResponseWriter, r *http.Request, status in
 		var err error
 		aliases, err = s.dnsRegistry.ListAliases()
 		if err != nil {
-			log.Printf("Error listing aliases: %v", err)
+			s.logError(err, "list aliases failed",
+				"op", "dns_list",
+				"method", r.Method,
+				"path", r.URL.Path,
+			)
 			if flashMsg == "" {
 				flashMsg = "Failed to list aliases"
 			}
@@ -266,12 +407,24 @@ func (s *Server) renderDNSPage(w http.ResponseWriter, r *http.Request, status in
 		w.WriteHeader(status)
 	}
 	if err := s.templates.ExecuteTemplate(w, "layout.html", data); err != nil {
-		log.Printf("Template error: %v", err)
+		s.logError(err, "template execution failed",
+			"op", "template_execute",
+			"template", "layout.html",
+			"page", "dns",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", status,
+		)
 	}
 }
 
 func (s *Server) handleAddAlias(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
+		s.logWarn("parse form failed",
+			"op", "dns_add",
+			"method", r.Method,
+			"path", r.URL.Path,
+		)
 		s.renderDNSPage(w, r, http.StatusBadRequest, "", "", "error", "Invalid form")
 		return
 	}
@@ -280,12 +433,32 @@ func (s *Server) handleAddAlias(w http.ResponseWriter, r *http.Request) {
 	destination := r.FormValue("destination")
 
 	if err := s.dnsRegistry.AddAlias(source, destination); err != nil {
+		s.logWarn("add alias failed",
+			"op", "dns_add",
+			"source", source,
+			"destination", destination,
+			"method", r.Method,
+			"path", r.URL.Path,
+			"err", err,
+		)
 		s.renderDNSPage(w, r, http.StatusBadRequest, source, destination, "error", fmt.Sprintf("Failed to add alias: %v", err))
 		return
 	}
 
+	s.logInfo("alias added",
+		"op", "dns_add",
+		"source", source,
+		"destination", destination,
+		"method", r.Method,
+		"path", r.URL.Path,
+	)
+
 	if err := s.dnsRegistry.RenderDnsmasqConf(); err != nil {
-		log.Printf("Error rendering dnsmasq config: %v", err)
+		s.logError(err, "render dnsmasq config failed",
+			"op", "dnsmasq_conf_render",
+			"method", r.Method,
+			"path", r.URL.Path,
+		)
 	}
 
 	http.Redirect(w, r, "/dns", http.StatusSeeOther)
@@ -299,27 +472,62 @@ func (s *Server) handleDeleteAlias(w http.ResponseWriter, r *http.Request) {
 	const prefix = "/dns/"
 	const suffix = "/delete"
 	if !strings.HasPrefix(escapedPath, prefix) || !strings.HasSuffix(escapedPath, suffix) {
+		s.logWarn("invalid delete alias path",
+			"op", "dns_delete",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"escapedPath", escapedPath,
+		)
 		s.renderDNSPage(w, r, http.StatusBadRequest, "", "", "error", "Invalid source")
 		return
 	}
 	escapedSource := strings.TrimSuffix(strings.TrimPrefix(escapedPath, prefix), suffix)
 	source, err := url.PathUnescape(escapedSource)
 	if err != nil || source == "" {
+		s.logWarn("invalid alias source",
+			"op", "dns_delete",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"escapedSource", escapedSource,
+		)
 		s.renderDNSPage(w, r, http.StatusBadRequest, "", "", "error", "Invalid source")
 		return
 	}
 
 	if err := s.dnsRegistry.DeleteAlias(source); err != nil {
 		if os.IsNotExist(err) {
+			s.logWarn("delete alias: not found",
+				"op", "dns_delete",
+				"source", source,
+				"method", r.Method,
+				"path", r.URL.Path,
+			)
 			s.renderDNSPage(w, r, http.StatusBadRequest, "", "", "warning", "Alias not found")
 			return
 		}
+		s.logError(err, "delete alias failed",
+			"op", "dns_delete",
+			"source", source,
+			"method", r.Method,
+			"path", r.URL.Path,
+		)
 		s.renderDNSPage(w, r, http.StatusInternalServerError, "", "", "error", "Failed to delete alias")
 		return
 	}
 
+	s.logInfo("alias deleted",
+		"op", "dns_delete",
+		"source", source,
+		"method", r.Method,
+		"path", r.URL.Path,
+	)
+
 	if err := s.dnsRegistry.RenderDnsmasqConf(); err != nil {
-		log.Printf("Error rendering dnsmasq config: %v", err)
+		s.logError(err, "render dnsmasq config failed",
+			"op", "dnsmasq_conf_render",
+			"method", r.Method,
+			"path", r.URL.Path,
+		)
 	}
 
 	http.Redirect(w, r, "/dns", http.StatusSeeOther)

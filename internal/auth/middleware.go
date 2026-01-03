@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -30,8 +31,9 @@ func NewMiddleware(cfg *config.Config) *Middleware {
 func (m *Middleware) Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var userID, email string
+		override := m.cfg.OverrideUserID != "" && m.cfg.OverrideEmail != ""
 
-		if m.cfg.OverrideUserID != "" && m.cfg.OverrideEmail != "" {
+		if override {
 			userID = m.cfg.OverrideUserID
 			email = m.cfg.OverrideEmail
 		} else {
@@ -40,6 +42,16 @@ func (m *Middleware) Authenticate(next http.Handler) http.Handler {
 		}
 
 		if userID == "" || email == "" {
+			if m.cfg.LogLevel.Enabled(config.LogLevelWarn) {
+				log.Printf(
+					"WARN auth unauthorized method=%q path=%q userIDHeader=%q emailHeader=%q override=%t",
+					r.Method,
+					r.URL.Path,
+					m.cfg.UserIDHeader,
+					m.cfg.EmailHeader,
+					override,
+				)
+			}
 			writeUnauthorized(w, r, m.cfg.UserIDHeader, m.cfg.EmailHeader)
 			return
 		}
