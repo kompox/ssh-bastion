@@ -5,6 +5,16 @@ DATA_DIR="${SSHBASTION_DATA_DIR:-/data}"
 AUTHORIZED_KEYS_FILE="${DATA_DIR}/authorized_keys/jump"
 HOST_KEYS_DIR="${DATA_DIR}/ssh"
 
+SSHD_LOG_LEVEL="${SSHBASTION_SSHD_LOG_LEVEL:-INFO}"
+case "${SSHD_LOG_LEVEL}" in
+	QUIET|FATAL|ERROR|INFO|VERBOSE|DEBUG|DEBUG1|DEBUG2|DEBUG3)
+		;;
+	*)
+		echo "WARN: invalid SSHBASTION_SSHD_LOG_LEVEL='${SSHD_LOG_LEVEL}', falling back to INFO" >&2
+		SSHD_LOG_LEVEL="INFO"
+		;;
+esac
+
 # Only the sshd container should resolve via dnsmasq (running in the shared
 # network namespace). Docker does not allow setting `dns:` when `network_mode`
 # is set to `service:...`, so configure resolv.conf here instead.
@@ -72,7 +82,7 @@ PermitTTY no
 
 UseDNS no
 PrintMotd no
-LogLevel INFO
+LogLevel ${SSHD_LOG_LEVEL}
 Subsystem sftp internal-sftp
 EOF
 

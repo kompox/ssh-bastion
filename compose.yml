@@ -45,5 +45,6 @@ services:
     environment:
       SSHBASTION_DATA_DIR: /data
       SSHBASTION_SSHD_NAMESERVER: 127.0.0.1
+      SSHBASTION_SSHD_LOG_LEVEL: VERBOSE
     volumes:
       - ./_tmp/data:/data
