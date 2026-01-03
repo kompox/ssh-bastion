@@ -2,7 +2,7 @@
 id: task-20260103a-container-dev-local-testing
 title: Container development and local testing (Dockerfile + compose)
 status: done
-updated: 2026-01-03T05:34:12Z
+updated: 2026-01-03T06:41:25Z
 ---
 # Task: Container development and local testing (Dockerfile + compose)
 
@@ -38,6 +38,8 @@ This task is derived from the roadmap section “Container development and local
 ## Spec (summary)
 
 Detailed container/runtime decisions (image contents, Pod topology, compose sidecar emulation, DNS resolver wiring) are documented in [design-containers].
+
+E2E/integration testing against the docker-compose setup (published ports `:8080` / `:5353` + `./_tmp/data` inspection) is documented in [design-e2e-testing].
 
 This task document intentionally keeps only the “deliverables contract” above.
 
@@ -98,10 +100,15 @@ Notes:
 - 2026-01-03T05:34:12Z
   - Switch docker-compose persistence from a named volume to a bind mount (`./_tmp/data`)
 
+- 2026-01-03T06:41:25Z
+  - Move `make e2e` orchestration script to `./e2e/scripts/run.sh`
+
 ## References
 
 - [design-containers] - Containers (image + runtime topology)
 - [design-overview] - Design overview document
+- [design-e2e-testing] - E2E / integration testing (docker-compose + published ports)
 
 [design-containers]: ../design/design-containers.md
 [design-overview]: ../design/design-overview.md
+[design-e2e-testing]: ../design/design-e2e-testing.md

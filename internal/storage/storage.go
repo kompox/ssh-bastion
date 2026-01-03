@@ -38,6 +38,13 @@ func (s *Store) AtomicWrite(relPath string, data []byte) error {
 	tmpPath := tmpFile.Name()
 	defer os.Remove(tmpPath)
 
+	// Make the final file readable when using a bind mount (e.g. ./_tmp/data:/data)
+	// so that local E2E tests can inspect generated artifacts from the host.
+	if err := os.Chmod(tmpPath, 0644); err != nil {
+		tmpFile.Close()
+		return fmt.Errorf("chmod: %w", err)
+	}
+
 	if _, err := tmpFile.Write(data); err != nil {
 		tmpFile.Close()
 		return fmt.Errorf("write: %w", err)

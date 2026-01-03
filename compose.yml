@@ -27,7 +27,9 @@ services:
     command:
       - -k
       - --log-facility=-
-      - --listen-address=127.0.0.1
+      # Must listen on the container interface so that Docker's published ports
+      # (e.g. 5353->53) can forward queries successfully.
+      - --listen-address=0.0.0.0
       - --bind-interfaces
       - --no-resolv
       - --server=127.0.0.11

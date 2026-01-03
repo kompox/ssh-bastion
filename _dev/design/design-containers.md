@@ -2,7 +2,7 @@
 id: design-containers
 title: Containers (image + runtime topology)
 status: draft
-updated: 2026-01-03T05:34:12Z
+updated: 2026-01-03T06:29:52Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Containers (image + runtime topology)
@@ -135,6 +135,8 @@ This allows dnsmasq to delegate “non-alias” queries back to Docker’s resol
 
 - Web UI served on `:8080`.
 - Optional DNS exposure to the host via a mapped port (e.g. `5353 -> 53`) for inspection/testing.
+  - For Docker port publishing to work, dnsmasq must also listen on the container interface (e.g. `--listen-address=0.0.0.0`).
+    The web process can still resolve via `127.0.0.1:53` within the shared network namespace.
 - Data persisted via a bind mount to `./_tmp/data`.
 
 ## Operational notes
