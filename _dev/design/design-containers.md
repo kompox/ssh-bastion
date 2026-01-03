@@ -2,7 +2,7 @@
 id: design-containers
 title: Containers (image + runtime topology)
 status: draft
-updated: 2026-01-03T12:14:12Z
+updated: 2026-01-03T18:12:41Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Containers (image + runtime topology)
@@ -46,7 +46,7 @@ The image should contain:
 - `/app/web/` (templates and static assets required by the web server)
 - runtime packages:
   - `dnsmasq` (required for sidecar DNS)
-  - `openssh-server` (present for future SSH work; not necessarily started)
+  - `openssh-server` (used by the `sshd` container)
   - `ca-certificates`
 
 ### Defaults and overridability
@@ -65,23 +65,23 @@ Note: this is a deliberate trade-off to keep “one image, multiple containers�
 
 Target a single Pod with multiple containers and a shared writable volume:
 
-- Container: `ssh-bastion` (web role)
+- Container: `ssh-bastion`
   - Runs: `ssh-bastion web ...`
   - Reads/writes under `/data`:
     - generated dnsmasq config snippets (e.g. `/data/dns/dnsmasq.d/*.conf`)
-    - key registry / generated authorized_keys (future)
+    - key registry / generated authorized_keys
 - Container: `dnsmasq` (sidecar)
   - Runs: `dnsmasq ...`
   - Listens on `:53` within the Pod network namespace (reachable at `127.0.0.1:53`)
   - Reads config from the shared `/data` volume
-- Container: `sshd` (future)
+- Container: `sshd`
   - Runs: `sshd -D -e ...` (exact command/config is out of scope here)
   - Reads generated `authorized_keys` and host keys from shared storage
 
 ### Resolver wiring (Kubernetes)
 
 - Default: the Pod uses cluster DNS (e.g. CoreDNS) via the normal `dnsPolicy: ClusterFirst` behavior.
-- `ssh-bastion` (web role) and `dnsmasq` should keep that default resolver.
+- `ssh-bastion` and `dnsmasq` should keep that default resolver.
 - `sshd` is the only container intended to use dnsmasq (`127.0.0.1:53`), by rewriting `/etc/resolv.conf` in the sshd entrypoint (under the assumptions documented in [DNS (nameserver routing)](#dns-nameserver-routing)).
 
 ### Shared volume
@@ -95,7 +95,7 @@ Target a single Pod with multiple containers and a shared writable volume:
 
 docker-compose should emulate two key Pod properties:
 
-1. Shared network namespace between the `ssh-bastion` web process and dnsmasq.
+1. Shared network namespace between the `ssh-bastion` container and dnsmasq.
 2. Shared writable volume for `/data`.
 
 ### Sidecar networking emulation
@@ -118,7 +118,7 @@ In Docker, upstream DNS is provided by the engine via an embedded resolver:
 
 Resolver wiring intent:
 
-- `ssh-bastion` (web role) should keep Docker’s default resolver (`127.0.0.11`).
+- `ssh-bastion` should keep Docker’s default resolver (`127.0.0.11`).
 - `dnsmasq` should forward non-alias queries to an upstream resolver that can reach the Internet (in compose: Docker’s embedded resolver).
 - `sshd` is the only container intended to use dnsmasq as its resolver (`127.0.0.1:53`).
 
@@ -140,7 +140,7 @@ This section consolidates the DNS resolver routing design for both supported env
 
 - dnsmasq answers configured CNAME-like aliases and forwards everything else to an upstream resolver.
 - Only the `sshd` container is expected to use dnsmasq as its resolver (`127.0.0.1:53`).
-- The `ssh-bastion` (web role) and `dnsmasq` containers should keep the platform-default resolver so they can resolve upstream names without recursion.
+- The `ssh-bastion` and `dnsmasq` containers should keep the platform-default resolver so they can resolve upstream names without recursion.
 
 ### Kubernetes (Pod)
 
@@ -181,7 +181,7 @@ Constraints:
 
 Recommended behavior:
 
-- `ssh-bastion` (web): keep the default Docker resolver (`127.0.0.11`).
+- `ssh-bastion`: keep the default Docker resolver (`127.0.0.11`).
 - `dnsmasq` (sidecar): forward non-alias queries to Docker’s resolver (`127.0.0.11`).
 - `sshd` (sidecar): overwrite `/etc/resolv.conf` at start to `nameserver 127.0.0.1` so only sshd resolves via dnsmasq.
 
@@ -228,9 +228,9 @@ Operator notes:
 
 ## Open questions / follow-up work
 
-- Define and implement how `sshd` is started (separate container from the same image) and how it consumes generated `authorized_keys`.
+- Document and validate how `sshd` is started (separate container from the same image) and how it consumes generated `authorized_keys`.
 - Add explicit multi-role entrypoints to the Go binary (e.g. `ssh-bastion dns` / `ssh-bastion sshd`) to reduce reliance on compose `entrypoint` overrides.
-- Decide the exact reload strategy for dnsmasq and (future) sshd.
+- Decide the exact reload strategy for dnsmasq and sshd.
 - Production hardening: securityContext/capabilities for binding to port 53, and a minimal-permission setup for sshd.
 
 ## References

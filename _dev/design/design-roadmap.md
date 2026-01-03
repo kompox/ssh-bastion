@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-03T10:33:14Z
+updated: 2026-01-03T17:55:31Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -14,7 +14,14 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 ### DNS alias testing
 
 - E2E tests for DNS alias functionality using docker-compose setup
+- Add E2E test to verify CNAME to A resolution capability
 - Task: [task-20260103e-dns-alias-testing](../tasks/task-20260103e-dns-alias-testing.md)
+
+### Container: rebuild with glibc
+
+- Rebuild the container image using a glibc-based base image (e.g., `debian:stable-slim` or `ubuntu:latest`)
+- Ensure that sshd can resolve CNAME to A records correctly
+- Task: [task-20260103f-container-rebuild-glibc](../tasks/task-20260103f-container-rebuild-glibc.md)
 
 ## TODO
 

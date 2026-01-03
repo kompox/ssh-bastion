@@ -2,7 +2,7 @@
 id: design-overview
 title: kompox-ssh-bastion (design + implementation plan)
 status: stable
-updated: 2026-01-03T04:31:37Z
+updated: 2026-01-03T18:22:27Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: kompox-ssh-bastion (design + implementation plan)
@@ -24,7 +24,7 @@ For container image/runtime topology details (K8s Pod target + docker-compose em
 - Users authenticate to the bastion with their own SSH keypair (public keys registered via the web UI).
 - End-to-end requirement: the final target (e.g., Gitea/GitLab container on port 22) still authenticates the user’s *local* SSH key as-is; the bastion is only a jump host.
 - SSO via OIDC is required for accessing the web UI.
-  - In this repo, the web app does **not** implement OIDC directly (MVP).
+  - In this repo, the ssh-bastion app does **not** implement OIDC directly (MVP).
   - Instead, it trusts an external auth proxy (Azure Easy Auth or oauth2-proxy) and reads user identity from HTTP headers.
 - Web UI can be built with HTMX.
 - DNS aliasing:
@@ -48,21 +48,23 @@ For container image/runtime topology details (K8s Pod target + docker-compose em
 
 ## High-level architecture
 
-Run one Kubernetes **Pod** with two containers and shared volumes.
+Run one Kubernetes **Pod** with three containers and shared volumes.
 
-- Container A: `sshd + web app`
-  - `sshd` provides the bastion.
-  - Web app provides:
-    - OIDC-protected UI and API to manage SSH public keys.
-    - UI and API to manage DNS alias rules.
+- Container: `ssh-bastion`
+  - Provides:
+    - OIDC-protected Web UI and API to manage SSH public keys.
+    - Web UI and API to manage DNS alias rules.
     - Generation of `authorized_keys` file used by `sshd`.
     - Generation of dnsmasq config snippets.
-- Container B: `dnsmasq`
+- Container: `sshd`
+  - Provides the bastion SSH endpoint.
+  - Reads host keys and `authorized_keys` from shared storage.
+- Container: `dnsmasq`
   - Listens on `127.0.0.1:53` within the Pod network namespace.
   - Provides CNAME-like aliasing for selected external FQDNs.
   - Forwards everything else to cluster DNS.
 
-Why two containers (not three processes in one container):
+Why three containers (not three processes in one container):
 
 - Keeps K8s-native lifecycle/health checks and failure isolation.
 - Avoids maintaining a process supervisor (s6/runit) in PID 1.
@@ -70,12 +72,14 @@ Why two containers (not three processes in one container):
 
 ### Pod DNS flow
 
-- Pod `dnsPolicy: None`
-- Pod `dnsConfig.nameservers: ["127.0.0.1"]`
+Default Pod DNS can remain `dnsPolicy: ClusterFirst`.
 
-Then dnsmasq forwards to the cluster DNS service (kube-dns/CoreDNS) IP.
+Resolver intent:
 
-Result: name resolution inside the Pod is controlled by bastion-local dnsmasq, while still resolving normal cluster names.
+- `ssh-bastion` and `dnsmasq` keep the platform default resolver (cluster DNS).
+- `sshd` is the only container that resolves via dnsmasq (`127.0.0.1:53`), by rewriting `/etc/resolv.conf` in the sshd entrypoint.
+
+Result: the web UI can resolve upstream names without recursion, while the bastion SSH uses dnsmasq for aliasing.
 
 ## SSH bastion behavior
 
@@ -100,7 +104,7 @@ Note: avoid `ForceCommand` unless proven compatible with the chosen ProxyJump wo
 
 ### `authorized_keys` generation
 
-- Web app writes a single `authorized_keys` file for the `jump` user, containing all enabled keys.
+- ssh-bastion app writes a single `authorized_keys` file for the `jump` user, containing all enabled keys.
 - The key registry uses a stable fingerprint as the primary key.
 
 Performance note: OpenSSH scans keys linearly in `authorized_keys`. If this becomes an issue, consider moving to `AuthorizedKeysCommand` later. For MVP, a generated file is simplest.
@@ -142,7 +146,7 @@ Mitigations:
 - Prefer a dedicated SSH hostname per service (e.g., `gitea-ssh.example.com`) if external SSH exists.
 - Or ensure the same host key is presented in both paths.
 
-## Web app
+## ssh-bastion app (Web UI)
 
 ### UX scope (MVP)
 
@@ -162,7 +166,7 @@ Mitigations:
 
 ### Authentication (via trusted headers)
 
-The web app assumes **no anonymous access**: every request must come through an auth proxy that already enforced OIDC login.
+The ssh-bastion app assumes **no anonymous access**: every request must come through an auth proxy that already enforced OIDC login.
 
 Supported auth proxies (MVP):
 
@@ -211,29 +215,52 @@ UI note: the UI should use the configured **email header** for display and label
 
 All configuration is via environment variables (no config files).
 
+This repository runs three roles as separate containers in local docker-compose (and as separate containers/processes in Kubernetes):
+
+- `ssh-bastion web` (ssh-bastion app / Web UI)
+- `dnsmasq` (bastion-local DNS)
+- `sshd` (bastion SSH)
+
+Each environment variable below states which role/container it configures.
+
 - `SSHBASTION_DATA_DIR`
   - Default: `/data`
   - Purpose: root directory for file-based persistence.
+  - Applies to: **ssh-bastion**, **dnsmasq**, **sshd** (shared volume mount location)
 - `SSHBASTION_AUTH_MODE`
   - Values: `easy_auth` | `oauth2_proxy`
   - Purpose: selects default header mapping.
+  - Applies to: **ssh-bastion**
 - `SSHBASTION_AUTH_USER_ID_HEADER`
   - Default: `X-MS-CLIENT-PRINCIPAL-ID` (when `easy_auth`), `X-Auth-Request-User` (when `oauth2_proxy`)
   - Purpose: request header name containing the stable user ID.
+  - Applies to: **ssh-bastion**
 - `SSHBASTION_AUTH_EMAIL_HEADER`
   - Default: `X-MS-CLIENT-PRINCIPAL-NAME` (when `easy_auth`), `X-Auth-Request-Email` (when `oauth2_proxy`)
   - Purpose: request header name containing the user email (UI display only).
+  - Applies to: **ssh-bastion**
 - `SSHBASTION_AUTH_OVERRIDE_USER_ID`
   - Default: (empty)
   - Purpose: when set, uses this value instead of reading from the header. For testing/development only.
+  - Applies to: **ssh-bastion**
 - `SSHBASTION_AUTH_OVERRIDE_EMAIL`
   - Default: (empty)
   - Purpose: when set, uses this value instead of reading from the header. For testing/development only.
-
+  - Applies to: **ssh-bastion**
 - `SSHBASTION_LOG_LEVEL`
   - Values: `error` | `warn` | `info` | `debug`
   - Default: `info`
   - Purpose: controls server log verbosity.
+  - Applies to: **ssh-bastion**
+- `SSHBASTION_SSHD_LOG_LEVEL`
+  - Values: `QUIET` | `FATAL` | `ERROR` | `INFO` | `VERBOSE` | `DEBUG` | `DEBUG1` | `DEBUG2` | `DEBUG3`
+  - Default: `INFO`
+  - Purpose: overrides `sshd_config` `LogLevel` for the bastion sshd.
+  - Applies to: **sshd**
+- `SSHBASTION_SSHD_NAMESERVER`
+  - Default: (empty)
+  - Purpose: when set, the sshd entrypoint rewrites `/etc/resolv.conf` to use this `nameserver`.
+  - Applies to: **sshd**
 
 Validation rules (MVP):
 
@@ -270,15 +297,17 @@ Write to a temp file in the same directory, then rename.
 
 ### Pod spec summary
 
-- 1 Pod / 2 containers
-  - Container A: `ghcr.io/kompox/ssh-bastion` running `sshd` + web
-  - Container B: `ghcr.io/kompox/ssh-bastion` running `dnsmasq` (same image, different args)
+- 1 Pod / 3 containers
+  - Container: `ghcr.io/kompox/ssh-bastion` running `ssh-bastion web ...`
+  - Container: `ghcr.io/kompox/ssh-bastion` running `sshd ...`
+  - Container: `ghcr.io/kompox/ssh-bastion` running `dnsmasq ...` (same image, different args)
 - Shared volumes:
   - `/data` as a PVC
   - `/etc/dnsmasq.d/generated` (can live under `/data` and bind-mount into dnsmasq)
 - Ports:
-  - Container A: 22 (sshd), 8080 (web)
-  - Container B: 53/udp + 53/tcp (dns)
+  - `ssh-bastion`: 8080 (Web UI)
+  - `sshd`: 22 (SSH)
+  - `dnsmasq`: 53/udp + 53/tcp (DNS)
 
 ### Security contexts
 
@@ -302,7 +331,7 @@ Write to a temp file in the same directory, then rename.
 
 The container image should support two entrypoints:
 
-- `ssh-bastion web` (runs web app + writes generated files)
+- `ssh-bastion web` (runs ssh-bastion app + writes generated files)
 - `ssh-bastion dns` (runs dnsmasq with generated config)
 
 Optionally also:
@@ -313,32 +342,27 @@ Optionally also:
 ### Milestones
 
 1. **File storage + models**
-   - Key model, user model, alias model
-   - Fingerprint calc + validation
-   - Atomic write helpers
-
+    - Key model, user model, alias model
+    - Fingerprint calc + validation
+    - Atomic write helpers
 2. **Web UI (no auth)**
-   - CRUD pages for keys + aliases
-   - Generate authorized_keys + dnsmasq conf
-
+    - CRUD pages for keys + aliases
+    - Generate authorized_keys + dnsmasq conf
 3. **Authentication integration (auth proxy headers)**
-  - Implement header-based auth (Azure Easy Auth + oauth2-proxy)
-  - Header names configurable via environment variables
-  - 401 when user ID or email header is missing/empty
-
+    - Implement header-based auth (Azure Easy Auth + oauth2-proxy)
+    - Header names configurable via environment variables
+    - 401 when user ID or email header is missing/empty
 4. **Container image**
-   - Multi-stage Docker build
-   - Include `sshd` and `dnsmasq`
-   - Minimal runtime base
-
+    - Multi-stage Docker build
+    - Include `sshd` and `dnsmasq`
+    - Minimal runtime base
 5. **Kubernetes manifests / Helm**
-   - Deployment, Service (LB for SSH), Service for web (cluster-internal)
-   - PVC
-   - Health checks
-
+    - Deployment, Service (LB for SSH), Service for Web UI (cluster-internal)
+    - PVC
+    - Health checks
 6. **GitHub Actions**
-   - Buildx
-   - Push to GHCR
+    - Buildx
+    - Push to GHCR
 
 ### Acceptance criteria (MVP)
 
@@ -356,14 +380,14 @@ Optionally also:
 ## References
 
 - [design-containers] - Containers (image + runtime topology)
-- [design-webapp-routes] - Web app routes & sitemap
-
-- Reference: [OpenSSH sshd_config]
-- Reference: [dnsmasq]
-- Reference: [oauth2-proxy]
-- Reference: [Azure App Service Easy Auth: user identities]
-- Reference: [HTMX]
-- Reference: [Pico.css]
+- [design-webapp-routes] - HTTP routes & sitemap
+- External resources:
+  - [OpenSSH sshd_config]
+  - [dnsmasq]
+  - [oauth2-proxy]
+  - [Azure App Service Easy Auth: user identities]
+  - [HTMX]
+  - [Pico.css]
 
 [design-containers]: ../design/design-containers.md
 [design-webapp-routes]: ../design/design-webapp-routes.md

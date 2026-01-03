@@ -2,7 +2,7 @@
 id: task-20260103e-dns-alias-testing
 title: DNS alias testing (E2E)
 status: in-progress
-updated: 2026-01-03T10:42:42Z
+updated: 2026-01-03T18:00:03Z
 ---
 
 # Task: DNS alias testing (E2E)
@@ -54,6 +54,7 @@ Provide an end-to-end test for DNS alias functionality using the local docker-co
 - [x] Implement/adjust E2E test(s) for DNS alias add/delete + resolution
 - [x] Ensure cleanup is reliable (idempotent if rerun)
 - [x] Run `make e2e` locally and confirm green
+- [ ] Add E2E scenario to reproduce CNAME->A resolution issue (sshd via ProxyJump)
 - [ ] Update relevant design docs if conventions change
 - [ ] Move roadmap item to DONE when complete
 
@@ -68,10 +69,18 @@ Provide an end-to-end test for DNS alias functionality using the local docker-co
 - 2026-01-03T10:42:42Z
   - Align task doc formatting with other task files; add implementation details and references
 
+- 2026-01-03T18:00:03Z
+  - Investigated alias failure `hoge.local -> github.com` for `ssh -J ... git@hoge.local`.
+  - Confirmed dnsmasq answers CNAME-only for `hoge.local` until `github.com` is cached; after caching, A may appear in the same response.
+  - Observed sshd-side error: `Name has no usable address` when only CNAME is returned.
+  - Decided to track container glibc rebuild separately: see [task-20260103f-container-rebuild-glibc].
+
 ## References
 
 - [design-roadmap] - Development Roadmap
 - [design-e2e-testing] - E2E testing conventions
+- [task-20260103f-container-rebuild-glibc] - Container rebuild with glibc (CNAME->A issue)
 
 [design-roadmap]: ../design/design-roadmap.md
 [design-e2e-testing]: ../design/design-e2e-testing.md
+[task-20260103f-container-rebuild-glibc]: task-20260103f-container-rebuild-glibc.md
