@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-03T05:38:31Z
+updated: 2026-01-03T07:02:25Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -22,6 +22,11 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
   - Use `SSHBASTION_AUTH_OVERRIDE_USER_ID` / `SSHBASTION_AUTH_OVERRIDE_EMAIL` for test mode
 - Spec details: see [design-containers]
 - Task: [task-20260103a-container-dev-local-testing](../tasks/task-20260103a-container-dev-local-testing.md)
+
+### GitHub Actions: CI (tests)
+
+- Run `make test` on push and pull requests
+- Task: [task-20260103b-ci-tests](../tasks/task-20260103b-ci-tests.md)
 
 ## TODO
 
@@ -67,10 +72,6 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
   - PVC for `/data`
   - Health checks/readiness
   - SecurityContext with minimal capabilities (likely `CAP_NET_BIND_SERVICE` for ports 22/53)
-
-### GitHub Actions: CI (tests)
-
-- Run `make test` on push and pull requests
 
 ### GitHub Actions: Docker build and push
 
