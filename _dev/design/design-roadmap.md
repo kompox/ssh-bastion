@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-02T22:44:35Z
+updated: 2026-01-03T04:42:10Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -39,6 +39,7 @@ assistedBy: github/copilot (vscode) gpt-5.2
   - Two services: `ssh-bastion` and `dnsmasq` sidecar
   - Shared volume for generated dnsmasq config
   - Use `SSHBASTION_AUTH_OVERRIDE_USER_ID` and `SSHBASTION_AUTH_OVERRIDE_EMAIL` for test mode
+- Task: [task-20260103a-container-dev-local-testing](../tasks/task-20260103a-container-dev-local-testing.md)
 
 ### Container entrypoints
 
