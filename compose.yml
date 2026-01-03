@@ -3,8 +3,6 @@ services:
     build: .
     image: ssh-bastion:local
     command: ["web", "-addr", ":8080"]
-    dns:
-      - 127.0.0.1
     environment:
       SSHBASTION_DATA_DIR: /data
       SSHBASTION_AUTH_MODE: easy_auth
@@ -46,5 +44,6 @@ services:
     entrypoint: ["/usr/local/bin/ssh-entrypoint"]
     environment:
       SSHBASTION_DATA_DIR: /data
+      SSHBASTION_SSHD_NAMESERVER: 127.0.0.1
     volumes:
       - ./_tmp/data:/data

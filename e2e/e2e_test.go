@@ -157,6 +157,100 @@ func TestE2E_DNSResolvesAlias(t *testing.T) {
 	t.Fatalf("dns query did not meet expectations: %v", lastErr)
 }
 
+func TestE2E_DeleteDnsAlias(t *testing.T) {
+	httpBase := getEnvDefault("SSHBASTION_E2E_HTTP_BASE", "http://localhost:8080")
+	dataDir := getDataDir()
+
+	source := "e2e.local"
+	destination := "ssh-bastion"
+
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	// Delete the alias via the web API.
+	deleteURL := fmt.Sprintf("%s/dns/%s/delete", httpBase, url.PathEscape(source))
+	resp, err := client.Post(deleteURL, "application/x-www-form-urlencoded", nil)
+	if err != nil {
+		t.Fatalf("POST /dns/{source}/delete failed: %v", err)
+	}
+	defer resp.Body.Close()
+	_, _ = io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("expected delete to return 303, got %d", resp.StatusCode)
+	}
+
+	generated := filepath.Join(dataDir, "dns", "dnsmasq.d", "generated.conf")
+	line := fmt.Sprintf("cname=%s,%s", source, destination)
+	_ = waitReadFileNotContains(t, generated, line, 10*time.Second)
+}
+
+func TestE2E_DNSDoesNotResolveAlias(t *testing.T) {
+	dnsAddr := getEnvDefault("SSHBASTION_E2E_DNS_ADDR", "127.0.0.1:5353")
+
+	source := "e2e.local"
+	destination := "ssh-bastion"
+
+	name := dns.Fqdn(source)
+	blockedCNAME := dns.Fqdn(destination)
+
+	client := &dns.Client{Timeout: 2 * time.Second}
+	deadline := time.Now().Add(15 * time.Second)
+
+	var lastErr error
+	for time.Now().Before(deadline) {
+		msg := new(dns.Msg)
+		msg.SetQuestion(name, dns.TypeA)
+		// Disable recursion so we only validate dnsmasq's locally configured answers.
+		// This avoids depending on upstream DNS behavior for non-existent names.
+		msg.RecursionDesired = false
+
+		resp, _, err := client.Exchange(msg, dnsAddr)
+		if err != nil {
+			lastErr = err
+			time.Sleep(250 * time.Millisecond)
+			continue
+		}
+
+		hasA := false
+		hasAnyCNAME := false
+		for _, rr := range resp.Answer {
+			switch v := rr.(type) {
+			case *dns.A:
+				if v.A != nil {
+					hasA = true
+				}
+			case *dns.CNAME:
+				if strings.EqualFold(v.Hdr.Name, name) {
+					hasAnyCNAME = true
+				}
+			}
+		}
+
+		// If the alias is deleted, dnsmasq should no longer provide a local CNAME/A.
+		if !hasA && !hasAnyCNAME {
+			return
+		}
+
+		// Include rcode for debugging; upstream failures are fine, but local answers are not.
+		rcode := dns.RcodeToString[resp.Rcode]
+		if rcode == "" {
+			rcode = fmt.Sprintf("%d", resp.Rcode)
+		}
+		lastErr = fmt.Errorf("still has local answer after delete: rcode=%s hasA=%v hasAnyCNAME=%v blockedCNAME=%v", rcode, hasA, hasAnyCNAME, blockedCNAME)
+		time.Sleep(250 * time.Millisecond)
+	}
+
+	if lastErr == nil {
+		lastErr = errors.New("timeout")
+	}
+	t.Fatalf("dns still resolves deleted alias: %v", lastErr)
+}
+
 func waitHTTP200(t *testing.T, url string, timeout time.Duration) {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
@@ -206,6 +300,31 @@ func waitReadFileContains(t *testing.T, path string, substr string, timeout time
 		lastErr = errors.New("timeout")
 	}
 	t.Fatalf("file %s not ready: %v", path, lastErr)
+	return ""
+}
+
+func waitReadFileNotContains(t *testing.T, path string, substr string, timeout time.Duration) string {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	var lastErr error
+	for time.Now().Before(deadline) {
+		b, err := os.ReadFile(path)
+		if err != nil {
+			lastErr = err
+			time.Sleep(250 * time.Millisecond)
+			continue
+		}
+		content := string(b)
+		if !strings.Contains(content, substr) {
+			return content
+		}
+		lastErr = fmt.Errorf("still contains %q", substr)
+		time.Sleep(250 * time.Millisecond)
+	}
+	if lastErr == nil {
+		lastErr = errors.New("timeout")
+	}
+	t.Fatalf("file %s did not update: %v", path, lastErr)
 	return ""
 }
 

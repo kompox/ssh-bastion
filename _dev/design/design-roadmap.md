@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-03T09:48:24Z
+updated: 2026-01-03T10:33:14Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -10,6 +10,11 @@ assistedBy: github/copilot (vscode) gpt-5.2
 This roadmap complements [design-overview]. Container-specific decisions are tracked in [design-containers].
 
 ## IN-PROGRES
+
+### DNS alias testing
+
+- E2E tests for DNS alias functionality using docker-compose setup
+- Task: [task-20260103e-dns-alias-testing](../tasks/task-20260103e-dns-alias-testing.md)
 
 ## TODO
 

@@ -32,7 +32,9 @@ Container topology and networking details are specified in [design-containers].
 
 ## Test topology
 
-- Runtime: `docker compose up -d --build`
+- Runtime: `docker compose up -d --build --force-recreate`
+  - This repo uses a sidecar topology where some services share a network namespace via `network_mode: service:ssh-bastion`.
+  - If `ssh-bastion` is recreated without recreating the sidecars, the sidecars may remain attached to the *previous* container network namespace, causing DNS/SSH flakiness.
 - Persistence: bind mount `./_tmp/data:/data`
 - Auth: docker-compose runs the web app in test mode via `SSHBASTION_AUTH_OVERRIDE_USER_ID` / `SSHBASTION_AUTH_OVERRIDE_EMAIL`
 
@@ -64,7 +66,7 @@ The Makefile owns the public targets, but the orchestration script lives under `
 - `make e2e-clean`
   - removes contents under `./_tmp/data` (ensures no state leakage)
 - `make e2e-up`
-  - starts services with `docker compose up -d --build`
+  - starts services with `docker compose up -d --build --force-recreate`
 - `make e2e-down`
   - stops services with `docker compose down`
 - `make e2e`

@@ -49,7 +49,7 @@ mkdir -p ./_tmp/data
 docker compose run --rm -T --entrypoint sh ssh-bastion -c 'rm -rf /data/*'
 
 echo "[1/5] Starting compose (build if needed)…" >&2
-docker compose up -d --build
+docker compose up -d --build --force-recreate
 
 echo "[2/5] Waiting for web server…" >&2
 wait_for "web server (GET / -> 200)" 30 sh -c 'test "$(curl -sS -o /dev/null -w "%{http_code}" http://localhost:8080/)" = "200"'

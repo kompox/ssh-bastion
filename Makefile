@@ -8,7 +8,7 @@ help:
 	echo "  test          Run Go unit tests"; \
 	echo "  run-test-mode Run web server locally with override identity"; \
 	echo "  e2e-clean     Wipe bind-mounted /data contents (debug helper)"; \
-	echo "  e2e-up        docker compose up -d --build (debug helper)"; \
+	echo "  e2e-up        docker compose up -d --build --force-recreate (debug helper)"; \
 	echo "  e2e-down      docker compose down (debug helper)"; \
 	echo "  e2e           Run all e2e/scripts/e2e-NN-*.sh scenarios"
 
@@ -57,7 +57,7 @@ e2e-clean:
 
 e2e-up:
 	@# Debug helper: bring up compose services.
-	docker compose up -d --build
+	docker compose up -d --build --force-recreate
 
 e2e-down:
 	@# Debug helper: bring down compose services.

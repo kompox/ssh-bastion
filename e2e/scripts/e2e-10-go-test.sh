@@ -23,7 +23,7 @@ main() {
   mkdir -p ./_tmp/data
   docker compose run --rm -T --entrypoint sh ssh-bastion -c 'rm -rf /data/*'
 
-  docker compose up -d --build
+  docker compose up -d --build --force-recreate
 
   # Wait for HTTP readiness.
   for _ in $(seq 1 60); do
@@ -40,6 +40,13 @@ main() {
   docker compose restart dnsmasq
 
   go test -tags=e2e -v ./e2e -count=1 -run TestE2E_DNSResolvesAlias -timeout 2m
+
+  go test -tags=e2e -v ./e2e -count=1 -run TestE2E_DeleteDnsAlias -timeout 2m
+
+  # dnsmasq does not auto-reload config; restart to pick up regenerated *.conf.
+  docker compose restart dnsmasq
+
+  go test -tags=e2e -v ./e2e -count=1 -run TestE2E_DNSDoesNotResolveAlias -timeout 2m
 }
 
 main "$@"

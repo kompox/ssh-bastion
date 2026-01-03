@@ -5,6 +5,18 @@ DATA_DIR="${SSHBASTION_DATA_DIR:-/data}"
 AUTHORIZED_KEYS_FILE="${DATA_DIR}/authorized_keys/jump"
 HOST_KEYS_DIR="${DATA_DIR}/ssh"
 
+# Only the sshd container should resolve via dnsmasq (running in the shared
+# network namespace). Docker does not allow setting `dns:` when `network_mode`
+# is set to `service:...`, so configure resolv.conf here instead.
+if [ -n "${SSHBASTION_SSHD_NAMESERVER:-}" ]; then
+	if ! {
+		echo "nameserver ${SSHBASTION_SSHD_NAMESERVER}"
+		echo "options timeout:1 attempts:5"
+	} > /etc/resolv.conf; then
+		echo "WARN: failed to write /etc/resolv.conf (nameserver=${SSHBASTION_SSHD_NAMESERVER}); sshd DNS may not use dnsmasq" >&2
+	fi
+fi
+
 mkdir -p "${DATA_DIR}/authorized_keys" "${HOST_KEYS_DIR}" /run/sshd
 
 # sshd enforces StrictModes by default. Ensure path components are not
