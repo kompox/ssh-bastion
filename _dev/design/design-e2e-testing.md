@@ -28,8 +28,6 @@ Container topology and networking details are specified in [design-containers].
 - Keep tests independent from internal Go packages (black-box behavior).
 
 ## Non-goals
-
-- SSH (port 22) E2E testing (not in current compose scope).
 - White-box tests that import internal registries or storage.
 
 ## Test topology
@@ -39,6 +37,15 @@ Container topology and networking details are specified in [design-containers].
 - Auth: docker-compose runs the web app in test mode via `SSHBASTION_AUTH_OVERRIDE_USER_ID` / `SSHBASTION_AUTH_OVERRIDE_EMAIL`
 
 ## Test implementation
+
+## Conventions
+
+- Run from the repository root.
+  - All `make` targets are expected to be invoked from the repo root.
+  - Each `e2e/scripts/e2e-NN-*.sh` script should also be runnable standalone.
+- Temporary files live under `./_tmp/`.
+  - Persistent test state: `./_tmp/data/` (bind-mounted to `/data` in containers)
+  - SSH E2E keys (if generated): `./_tmp/` (e.g. `./_tmp/id_e2e`)
 
 ### Go tests
 
@@ -61,17 +68,15 @@ The Makefile owns the public targets, but the orchestration script lives under `
 - `make e2e-down`
   - stops services with `docker compose down`
 - `make e2e`
-  - runs the full flow, including:
-    - bringing up docker-compose
-    - waiting for HTTP readiness
-    - running the E2E test phase that creates DNS aliases and verifies generated files
-    - restarting dnsmasq (since it does not auto-reload config)
-    - running the E2E test phase that verifies DNS resolution via port 5353
+  - runs all `./e2e/scripts/e2e-NN-*.sh` scripts in order.
 
 Implementation note:
 
-- `make e2e` calls `bash ./e2e/scripts/run.sh`.
-- If scenarios grow, add scripts under `./e2e/scripts/` (e.g. `./e2e/scripts/e2e-<scenario>.sh`) and keep assertions in Go tests.
+- `make e2e` runs all `./e2e/scripts/e2e-NN-*.sh` scripts in order.
+  - `e2e-10-go-test.sh`: docker-compose + Go `-tags=e2e` black-box checks (HTTP/DNS/files)
+  - `e2e-20-ssh-login.sh`: OpenSSH-based login scenario (ssh-keygen/register/ssh)
+- Convention: `e2e-NN-*.sh` scripts must be runnable standalone (they handle setup and cleanup).
+- Convention: helper sub-scripts live under `./e2e/scripts/steps/` and are invoked by `e2e-NN-*.sh`.
 
 ## What we verify
 

@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-03T08:25:50Z
+updated: 2026-01-03T09:48:24Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -10,17 +10,6 @@ assistedBy: github/copilot (vscode) gpt-5.2
 This roadmap complements [design-overview]. Container-specific decisions are tracked in [design-containers].
 
 ## IN-PROGRES
-
-### Container development and local testing
-
-- Spec summary:
-  - One published image (`ghcr.io/kompox/ssh-bastion`) supports the local topology
-  - Local compose emulates a multi-container Pod with shared `/data`
-  - Runtime dependencies for sidecar DNS and SSH are included in the image
-- Spec details: see [design-containers]
-- Tasks:
-  - [task-20260103a-container-dev-local-testing](../tasks/task-20260103a-container-dev-local-testing.md)
-  - [task-20260103d-sshd-container](../tasks/task-20260103d-sshd-container.md)
 
 ## TODO
 
@@ -80,6 +69,17 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
   - Minimal “how to run locally” notes (test mode + data dir)
 
 ## DONE
+
+### Container development and local testing
+
+- Spec summary:
+  - One published image (`ghcr.io/kompox/ssh-bastion`) supports the local topology
+  - Local compose emulates a multi-container Pod with shared `/data`
+  - Runtime dependencies for sidecar DNS and SSH are included in the image
+- Spec details: see [design-containers]
+- Tasks:
+  - [task-20260103a-container-dev-local-testing](../tasks/task-20260103a-container-dev-local-testing.md)
+  - [task-20260103d-sshd-container](../tasks/task-20260103d-sshd-container.md)
 
 ### GitHub Actions: Docker build and push
 
