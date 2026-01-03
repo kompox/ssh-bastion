@@ -21,11 +21,12 @@ RUN apk add --no-cache ca-certificates dnsmasq openssh-server
 WORKDIR /app
 COPY web/ /app/web/
 COPY --from=build /out/ssh-bastion /usr/local/bin/ssh-bastion
+COPY --chmod=755 docker/ssh-entrypoint.sh /usr/local/bin/ssh-entrypoint
 
 # Useful defaults for local testing
 ENV SSHBASTION_DATA_DIR=/data
 
-EXPOSE 8080
+EXPOSE 22 8080
 
 ENTRYPOINT ["ssh-bastion"]
 CMD ["web", "-addr", ":8080"]

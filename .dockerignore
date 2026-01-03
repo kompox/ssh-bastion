@@ -1,0 +1,53 @@
+# Ignore local temp/state (changes frequently during e2e)
+_tmp/
+
+# OS / tooling caches
+**/.DS_Store
+**/Thumbs.db
+**/*.swp
+**/*.swo
+**/*.tmp
+**/*.log
+**/.idea/
+**/.cache/
+**/.venv/
+**/__pycache__/
+**/*.pyc
+**/node_modules/
+**/dist/
+**/build/
+**/.env
+**/.env.*
+
+# E2E scripts/tests are not needed to build the runtime image
+# (the Dockerfile builds ./cmd/ssh-bastion and copies web assets)
+e2e/
+
+# Developer docs/tasks are not needed for the image
+_dev/
+
+# Repository meta/docs not needed for image
+AGENTS.md
+README.md
+Makefile
+compose.yml
+docker-compose.yml
+docker-compose.yaml
+compose.yaml
+
+# Tests are not needed to compile the binary
+**/*_test.go
+
+# VCS / editor
+.git/
+.gitignore
+.gitattributes
+.gitmodules
+.github/
+.vscode/
+
+# CI / tooling configs
+.editorconfig
+.prettierrc*
+.eslintrc*
+.golangci.*

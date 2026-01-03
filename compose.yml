@@ -14,6 +14,7 @@ services:
     volumes:
       - ./_tmp/data:/data
     ports:
+      - "2222:22"
       - "8080:8080"
       - "5353:53/udp"
       - "5353:53/tcp"
@@ -34,5 +35,16 @@ services:
       - --no-resolv
       - --server=127.0.0.11
       - --conf-dir=/data/dns/dnsmasq.d,*.conf
+    volumes:
+      - ./_tmp/data:/data
+
+  sshd:
+    image: ssh-bastion:local
+    depends_on:
+      - ssh-bastion
+    network_mode: service:ssh-bastion
+    entrypoint: ["/usr/local/bin/ssh-entrypoint"]
+    environment:
+      SSHBASTION_DATA_DIR: /data
     volumes:
       - ./_tmp/data:/data
