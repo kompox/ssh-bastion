@@ -24,7 +24,7 @@ description: Suggest commit messages based on staged changes and assist with com
     - An editor will open for the user to edit `_tmp/git-commit/SEQ.txt`. Wait until the user closes the editor, which will complete the commit.
 5) Confirmation
     - Report the success or failure of `git commit`.
-    - Use `git show` to check the latest commit message and confirm that one of Plan A/B/C is reflected. If it appears that the commit was made without selecting a plan, warn the user.
+    - Run `make git-show` to check the latest commit message and confirm that one of Plan A/B/C is reflected. If it appears that the commit was made without selecting a plan, warn the user.
 
 ## Example of `_tmp/git-commit/SEQ.txt`
 

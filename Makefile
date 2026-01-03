@@ -1,5 +1,5 @@
 .PHONY: help clean build test run-test-mode e2e-clean e2e-up e2e-down e2e
-.PHONY: git-diff-cached git-commit-with-editor
+.PHONY: git-diff-cached git-commit-with-editor git-show
 
 help:
 	@echo "Targets:"; \
@@ -17,6 +17,9 @@ git-diff-cached:
 
 git-commit-with-editor:
 	git -c core.editor='code --wait' commit -v -e -F $(lastword $(sort $(wildcard _tmp/git-commit/*.txt)))
+
+git-show:
+	git --no-pager show -1 --name-status --pretty=fuller && git status
 
 clean:
 	@# Remove built binary and wipe persisted bind-mounted data.
