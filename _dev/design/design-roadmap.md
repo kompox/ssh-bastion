@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-03T07:28:07Z
+updated: 2026-01-03T08:08:09Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -22,11 +22,6 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
   - Use `SSHBASTION_AUTH_OVERRIDE_USER_ID` / `SSHBASTION_AUTH_OVERRIDE_EMAIL` for test mode
 - Spec details: see [design-containers]
 - Task: [task-20260103a-container-dev-local-testing](../tasks/task-20260103a-container-dev-local-testing.md)
-
-### GitHub Actions: Docker build and push
-
-- On push to `main` and tags `v*`, build and push multi-arch images (`linux/amd64`, `linux/arm64`) to `ghcr.io/kompox/ssh-bastion`
-- Task: [task-20260103c-docker-push](../tasks/task-20260103c-docker-push.md)
 
 ## TODO
 
@@ -86,6 +81,12 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
   - Minimal “how to run locally” notes (test mode + data dir)
 
 ## DONE
+
+### GitHub Actions: Docker build and push
+
+- On push to `main` and tags `v*`, build and push multi-arch images (`linux/amd64`, `linux/arm64`) to `ghcr.io/kompox/ssh-bastion`
+- Verified `ghcr.io/kompox/ssh-bastion:main` is published
+- Task: [task-20260103c-docker-push](../tasks/task-20260103c-docker-push.md)
 
 ### GitHub Actions: CI (tests)
 

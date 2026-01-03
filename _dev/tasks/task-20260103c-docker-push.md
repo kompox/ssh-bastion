@@ -1,8 +1,8 @@
 ---
 id: task-20260103c-docker-push
 title: Docker build and push (GitHub Actions)
-status: in-progress
-updated: 2026-01-03T07:34:39Z
+status: done
+updated: 2026-01-03T08:08:09Z
 ---
 # Task: Docker build and push (GitHub Actions)
 
@@ -34,15 +34,15 @@ Build and push the container image `ghcr.io/kompox/ssh-bastion` via GitHub Actio
 
 ## Plan & Checklist
 
-- [ ] Define image tags:
+- [x] Define image tags:
   - `main` on pushes to `main`
   - `latest` on pushes of `v*` tags
   - `v*` ref tag
-- [ ] Add workflow with build+push steps
-- [ ] Set up QEMU + Buildx in workflow
-- [ ] Use `GITHUB_TOKEN` and `packages: write` permissions (or PAT if required)
-- [ ] Ensure the Dockerfile build is reproducible in Actions
-- [ ] Verify the image appears in GHCR after a `main` push and a `v*` tag push
+- [x] Add workflow with build+push steps
+- [x] Set up QEMU + Buildx in workflow
+- [x] Use `GITHUB_TOKEN` and `packages: write` permissions (or PAT if required)
+- [x] Ensure the Dockerfile build is reproducible in Actions
+- [x] Verify the image appears in GHCR after a `main` push and a `v*` tag push
 
 ## Progress
 
@@ -54,6 +54,9 @@ Build and push the container image `ghcr.io/kompox/ssh-bastion` via GitHub Actio
 
 - 2026-01-03T07:34:39Z
   - Update spec: tag policy (`main` for main branch, `latest` for v* tags; no sha tags)
+
+- 2026-01-03T08:08:09Z
+  - Confirm workflow succeeded and `ghcr.io/kompox/ssh-bastion:main` is published
 
 ## References
 
