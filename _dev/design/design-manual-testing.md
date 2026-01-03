@@ -10,6 +10,8 @@ updated: 2026-01-02T18:16:42Z
 
 This document describes the supported manual testing workflows for the ssh-bastion web app, including local development without an auth proxy and verification of generated output files.
 
+For architecture context, see [design-overview]. For container/local topology, see [design-containers].
+
 ## Assumptions
 
 - The web app is a server-rendered HTML app.
@@ -232,3 +234,13 @@ _tmp/data/
 | `SSHBASTION_AUTH_EMAIL_HEADER` | `X-MS-CLIENT-PRINCIPAL-NAME` | `X-Auth-Request-Email` | Header containing email |
 | `SSHBASTION_AUTH_OVERRIDE_USER_ID` | (empty) | (empty) | TEST MODE: override user ID (ignores headers) |
 | `SSHBASTION_AUTH_OVERRIDE_EMAIL` | (empty) | (empty) | TEST MODE: override email (ignores headers) |
+
+## References
+
+- [design-overview] - Design overview document
+- [design-containers] - Containers (image + runtime topology)
+- [design-webapp-routes] - Web app routes & sitemap
+
+[design-overview]: ../design/design-overview.md
+[design-containers]: ../design/design-containers.md
+[design-webapp-routes]: ../design/design-webapp-routes.md

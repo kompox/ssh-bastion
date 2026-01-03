@@ -1,0 +1,36 @@
+services:
+  ssh-bastion:
+    build: .
+    image: ssh-bastion:local
+    command: ["web", "-addr", ":8080"]
+    dns:
+      - 127.0.0.1
+    environment:
+      SSHBASTION_DATA_DIR: /data
+      SSHBASTION_AUTH_MODE: easy_auth
+      SSHBASTION_AUTH_OVERRIDE_USER_ID: test-user-123
+      SSHBASTION_AUTH_OVERRIDE_EMAIL: developer@localhost
+      SSHBASTION_LOG_LEVEL: info
+    volumes:
+      - ./_tmp/data:/data
+    ports:
+      - "8080:8080"
+      - "5353:53/udp"
+      - "5353:53/tcp"
+
+  dnsmasq:
+    image: ssh-bastion:local
+    depends_on:
+      - ssh-bastion
+    network_mode: service:ssh-bastion
+    entrypoint: ["dnsmasq"]
+    command:
+      - -k
+      - --log-facility=-
+      - --listen-address=127.0.0.1
+      - --bind-interfaces
+      - --no-resolv
+      - --server=127.0.0.11
+      - --conf-dir=/data/dns/dnsmasq.d,*.conf
+    volumes:
+      - ./_tmp/data:/data

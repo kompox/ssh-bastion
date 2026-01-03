@@ -14,6 +14,8 @@ This document is a coding-agent-oriented design doc for a new repository:
 
 Goal: provide a shared SSH bastion (ProxyJump) and a small web UI to manage user SSH public keys and DNS alias rules used only by the bastion.
 
+For container image/runtime topology details (K8s Pod target + docker-compose emulation), see [design-containers].
+
 ## Requirements
 
 ### Must
@@ -353,7 +355,9 @@ Optionally also:
 
 ## References
 
-- See: [design-webapp-routes] - Route list (GET/POST) and simple sitemap for manual testing and maintenance.
+- [design-containers] - Containers (image + runtime topology)
+- [design-webapp-routes] - Web app routes & sitemap
+
 - Reference: [OpenSSH sshd_config]
 - Reference: [dnsmasq]
 - Reference: [oauth2-proxy]
@@ -361,7 +365,8 @@ Optionally also:
 - Reference: [HTMX]
 - Reference: [Pico.css]
 
-[design-webapp-routes]: ./design-webapp-routes.md
+[design-containers]: ../design/design-containers.md
+[design-webapp-routes]: ../design/design-webapp-routes.md
 [OpenSSH sshd_config]: https://man.openbsd.org/sshd_config
 [dnsmasq]: https://thekelleys.org.uk/dnsmasq/doc.html
 [oauth2-proxy]: https://oauth2-proxy.github.io/oauth2-proxy/

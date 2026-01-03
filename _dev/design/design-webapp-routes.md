@@ -10,6 +10,8 @@ updated: 2026-01-02T18:56:16Z
 
 Document the ssh-bastion web app’s HTTP routes (GET/POST) and provide a simple sitemap for manual testing and maintenance.
 
+This document complements [design-overview].
+
 ## Notes
 
 - The app is server-rendered HTML.
@@ -72,8 +74,14 @@ Document the ssh-bastion web app’s HTTP routes (GET/POST) and provide a simple
 
 ## References
 
+- [design-overview] - Design overview document
+- [design-containers] - Containers (image + runtime topology)
+
 - Source of truth: `internal/web/server.go`
 - Templates:
   - `web/templates/layout.html`
   - `web/templates/keys.html`
   - `web/templates/dns.html`
+
+[design-overview]: ../design/design-overview.md
+[design-containers]: ../design/design-containers.md

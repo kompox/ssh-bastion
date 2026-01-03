@@ -2,10 +2,26 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-03T04:42:10Z
+updated: 2026-01-03T05:38:31Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
+
+This roadmap complements [design-overview]. Container-specific decisions are tracked in [design-containers].
+
+## IN-PROGRES
+
+### Container development and local testing
+
+- Deliver a runnable container image (`ghcr.io/kompox/ssh-bastion`)
+  - Include runtime dependencies for local sidecar emulation (`dnsmasq`) and future SSH work (`openssh-server`)
+- Deliver a minimal docker-compose setup for local testing
+  - Two containers: `ssh-bastion` (web) + `dnsmasq` sidecar
+  - Pod-like sidecar networking (`network_mode: service:ssh-bastion`)
+  - Persist `/data` via bind mount to `./_tmp/data` (simplifies testing/inspection)
+  - Use `SSHBASTION_AUTH_OVERRIDE_USER_ID` / `SSHBASTION_AUTH_OVERRIDE_EMAIL` for test mode
+- Spec details: see [design-containers]
+- Task: [task-20260103a-container-dev-local-testing](../tasks/task-20260103a-container-dev-local-testing.md)
 
 ## TODO
 
@@ -30,16 +46,6 @@ assistedBy: github/copilot (vscode) gpt-5.2
 
 - `admin`: manage DNS alias rules
 - `user`: no access (cannot view or change)
-
-### Container development and local testing
-
-- Add `Dockerfile` (build `ghcr.io/kompox/ssh-bastion`)
-  - Include `ssh-bastion`, `sshd`, and `dnsmasq` runtime dependencies
-- Add `compose.yml` for local testing
-  - Two services: `ssh-bastion` and `dnsmasq` sidecar
-  - Shared volume for generated dnsmasq config
-  - Use `SSHBASTION_AUTH_OVERRIDE_USER_ID` and `SSHBASTION_AUTH_OVERRIDE_EMAIL` for test mode
-- Task: [task-20260103a-container-dev-local-testing](../tasks/task-20260103a-container-dev-local-testing.md)
 
 ### Container entrypoints
 
@@ -95,3 +101,11 @@ assistedBy: github/copilot (vscode) gpt-5.2
 - Add targeted tests if it’s practical; otherwise verify manually
 - Optionally document what operators should expect in logs
 - Task: [task-20260102d-webapp-observability](../tasks/task-20260102d-webapp-observability.md)
+
+## References
+
+- [design-overview] - Design overview document
+- [design-containers] - Containers (image + runtime topology)
+
+[design-overview]: ../design/design-overview.md
+[design-containers]: ../design/design-containers.md
