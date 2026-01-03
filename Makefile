@@ -67,6 +67,13 @@ e2e:
 	@# Run all numbered end-to-end scenarios.
 	@set -eu; \
 	for f in $$(ls -1 ./e2e/scripts/e2e-[0-9][0-9]-*.sh | LC_ALL=C sort); do \
-		echo "==> $$f"; \
-		bash "$$f"; \
+		case "$$f" in \
+			*'-skip-'*.sh|*'-xfail-'*.sh|*'-known-fail-'*.sh|*'-quarantine-'*.sh) \
+				echo "==> SKIP $$f"; \
+				;; \
+			*) \
+				echo "==> $$f"; \
+				bash "$$f"; \
+				;; \
+		esac; \
 	done

@@ -16,11 +16,29 @@ main() {
 
   cd "${root}"
 
-  trap 'docker compose down' EXIT
+  local tmp_root host_data_dir project
+  tmp_root="$(mktemp -d "${root}/_tmp/e2e-XXXXXXXX")"
+  host_data_dir="${tmp_root}/data"
+  mkdir -p "${host_data_dir}"
 
-  # Clean bind-mounted data via a helper container so the host isn't blocked
-  # by root-owned files created inside containers.
-  mkdir -p ./_tmp/data
+  project="ssh-bastion-e2e-$(basename "${tmp_root}" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-')"
+
+  export SSHBASTION_HOST_DATA_DIR="${host_data_dir}"
+  export SSHBASTION_E2E_DATA_DIR="${host_data_dir}"
+  export COMPOSE_PROJECT_NAME="${project}"
+
+  cleanup() {
+    docker compose down >/dev/null 2>&1 || true
+    # Clean bind-mounted data via a helper container so the host isn't blocked
+    # by root-owned files created inside containers.
+    docker compose run --rm -T --entrypoint sh ssh-bastion -c 'rm -rf /data/*' >/dev/null 2>&1 || true
+    if [ -n "${tmp_root:-}" ]; then
+      rm -rf "${tmp_root}" >/dev/null 2>&1 || true
+    fi
+  }
+  trap cleanup EXIT
+
+  # Ensure bind-mounted data is clean.
   docker compose run --rm -T --entrypoint sh ssh-bastion -c 'rm -rf /data/*'
 
   docker compose up -d --build --force-recreate

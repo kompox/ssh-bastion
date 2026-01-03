@@ -10,7 +10,7 @@ services:
       SSHBASTION_AUTH_OVERRIDE_EMAIL: developer@localhost
       SSHBASTION_LOG_LEVEL: info
     volumes:
-      - ./_tmp/data:/data
+      - ${SSHBASTION_HOST_DATA_DIR:-./_tmp/data}:/data
     ports:
       - "2222:22"
       - "8080:8080"
@@ -34,7 +34,7 @@ services:
       - --server=127.0.0.11
       - --conf-dir=/data/dns/dnsmasq.d,*.conf
     volumes:
-      - ./_tmp/data:/data
+      - ${SSHBASTION_HOST_DATA_DIR:-./_tmp/data}:/data
 
   sshd:
     image: ssh-bastion:local
@@ -47,4 +47,4 @@ services:
       SSHBASTION_SSHD_NAMESERVER: 127.0.0.1
       SSHBASTION_SSHD_LOG_LEVEL: VERBOSE
     volumes:
-      - ./_tmp/data:/data
+      - ${SSHBASTION_HOST_DATA_DIR:-./_tmp/data}:/data

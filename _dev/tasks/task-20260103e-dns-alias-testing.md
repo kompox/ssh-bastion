@@ -2,7 +2,7 @@
 id: task-20260103e-dns-alias-testing
 title: DNS alias testing (E2E)
 status: in-progress
-updated: 2026-01-03T18:00:03Z
+updated: 2026-01-03T19:18:05Z
 ---
 
 # Task: DNS alias testing (E2E)
@@ -54,8 +54,8 @@ Provide an end-to-end test for DNS alias functionality using the local docker-co
 - [x] Implement/adjust E2E test(s) for DNS alias add/delete + resolution
 - [x] Ensure cleanup is reliable (idempotent if rerun)
 - [x] Run `make e2e` locally and confirm green
-- [ ] Add E2E scenario to reproduce CNAME->A resolution issue (sshd via ProxyJump)
-- [ ] Update relevant design docs if conventions change
+- [x] Add E2E scenario to reproduce CNAME->A resolution issue (sshd via ProxyJump)
+- [x] Update relevant design docs if conventions change
 - [ ] Move roadmap item to DONE when complete
 
 ## Progress
@@ -74,6 +74,14 @@ Provide an end-to-end test for DNS alias functionality using the local docker-co
   - Confirmed dnsmasq answers CNAME-only for `hoge.local` until `github.com` is cached; after caching, A may appear in the same response.
   - Observed sshd-side error: `Name has no usable address` when only CNAME is returned.
   - Decided to track container glibc rebuild separately: see [task-20260103f-container-rebuild-glibc].
+
+- 2026-01-03T18:46:25Z
+  - Added an XFAIL E2E scenario to reproduce the CNAME->A issue via sshd + ProxyJump.
+  - Script: `e2e/scripts/e2e-30-xfail-cname-a-proxyjump.sh`
+  - Note: this is intentionally excluded from `make e2e` because it is expected to fail until the glibc rebuild is completed.
+
+- 2026-01-03T19:17:12Z
+  - Documented E2E script naming conventions (`e2e-NN-xfail-*`, `e2e-NN-skip-*`) in [design-e2e-testing].
 
 ## References
 

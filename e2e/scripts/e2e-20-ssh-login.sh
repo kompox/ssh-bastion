@@ -7,12 +7,20 @@ set -euo pipefail
 # - docker compose provides:
 #   - web UI at http://localhost:8080 (test mode overrides enabled)
 #   - sshd at localhost:2222 (published via compose)
-# - Data is persisted under ./_tmp/data (bind mount)
+# - Data is bind-mounted to /data inside containers
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
-key_prefix="${1:-_tmp/id_e2e}"
+tmp_root="$(mktemp -d "${repo_root}/_tmp/e2e-XXXXXXXX")"
+host_data_dir="${tmp_root}/data"
+mkdir -p "${host_data_dir}"
+
+export SSHBASTION_HOST_DATA_DIR="${host_data_dir}"
+project="ssh-bastion-e2e-$(basename "${tmp_root}" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-')"
+export COMPOSE_PROJECT_NAME="${project}"
+
+key_prefix="${tmp_root}/id_e2e"
 priv_key="${key_prefix}"
 pub_key="${key_prefix}.pub"
 
@@ -43,9 +51,17 @@ http_status() {
   curl -sS -o /dev/null -w "%{http_code}" "$1"
 }
 
-trap 'docker compose down' EXIT
+cleanup() {
+  docker compose down >/dev/null 2>&1 || true
+  # Clean bind-mounted data via a helper container so the host isn't blocked
+  # by root-owned files created inside containers.
+  docker compose run --rm -T --entrypoint sh ssh-bastion -c 'rm -rf /data/*' >/dev/null 2>&1 || true
+  if [ -n "${tmp_root:-}" ]; then
+    rm -rf "${tmp_root}" >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT
 
-mkdir -p ./_tmp/data
 docker compose run --rm -T --entrypoint sh ssh-bastion -c 'rm -rf /data/*'
 
 echo "[1/5] Starting compose (build if needed)…" >&2
@@ -72,7 +88,7 @@ if [ "$status" != "303" ]; then
 fi
 
 expected_line="$(cat "$pub_key")"
-wait_for "authorized_keys contains newly added key" 30 grep -Fxq "$expected_line" _tmp/data/authorized_keys/jump
+wait_for "authorized_keys contains newly added key" 30 grep -Fxq "$expected_line" "${host_data_dir}/authorized_keys/jump"
 
 echo "[5/5] SSH login smoke test…" >&2
 wait_for "ssh login succeeds" 30 ssh -4 -p 2222 \

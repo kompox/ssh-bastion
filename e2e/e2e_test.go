@@ -198,7 +198,8 @@ func TestE2E_DNSDoesNotResolveAlias(t *testing.T) {
 	name := dns.Fqdn(source)
 	blockedCNAME := dns.Fqdn(destination)
 
-	client := &dns.Client{Timeout: 2 * time.Second}
+	udpClient := &dns.Client{Timeout: 2 * time.Second, Net: "udp"}
+	tcpClient := &dns.Client{Timeout: 2 * time.Second, Net: "tcp"}
 	deadline := time.Now().Add(15 * time.Second)
 
 	var lastErr error
@@ -209,11 +210,29 @@ func TestE2E_DNSDoesNotResolveAlias(t *testing.T) {
 		// This avoids depending on upstream DNS behavior for non-existent names.
 		msg.RecursionDesired = false
 
-		resp, _, err := client.Exchange(msg, dnsAddr)
+		retryOverTCP := false
+		resp, _, err := udpClient.Exchange(msg, dnsAddr)
 		if err != nil {
-			lastErr = err
-			time.Sleep(250 * time.Millisecond)
-			continue
+			// dnsmasq can occasionally return a UDP response that is truncated
+			// mid-record (or otherwise unparsable). Retry over TCP for stability.
+			if strings.Contains(err.Error(), "overflow unpacking") {
+				retryOverTCP = true
+			} else {
+				lastErr = err
+				time.Sleep(250 * time.Millisecond)
+				continue
+			}
+		}
+		if resp != nil && resp.Truncated {
+			retryOverTCP = true
+		}
+		if retryOverTCP {
+			resp, _, err = tcpClient.Exchange(msg, dnsAddr)
+			if err != nil {
+				lastErr = err
+				time.Sleep(250 * time.Millisecond)
+				continue
+			}
 		}
 
 		hasA := false

@@ -2,7 +2,7 @@
 id: design-e2e-testing
 title: E2E / integration testing (docker-compose + published ports)
 status: draft
-updated: 2026-01-03T06:41:25Z
+updated: 2026-01-03T19:18:05Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: E2E / integration testing (docker-compose)
@@ -14,7 +14,9 @@ The E2E tests are intentionally “black-box”: they interact only with:
 - published ports from `docker compose up -d`
   - HTTP: `http://localhost:8080`
   - DNS: `127.0.0.1:5353` (TCP/UDP)
-- the bind-mounted data directory `./_tmp/data`
+- the bind-mounted data directory (per-run) under `./_tmp/`
+  - by default, E2E scripts use `mktemp -d ./_tmp/e2e-XXXXXXXX` and bind-mount `./_tmp/e2e-XXXXXXXX/data` to `/data`.
+  - for ad-hoc/manual runs, the compose file supports a default of `./_tmp/data`.
 
 Container topology and networking details are specified in [design-containers].
 
@@ -24,7 +26,7 @@ Container topology and networking details are specified in [design-containers].
 - Validate:
   - web server is reachable on `:8080`
   - DNS sidecar answers on `:5353`
-  - the web app generates expected files under `./_tmp/data`
+  - the web app generates expected files under the bind-mounted data directory
 - Keep tests independent from internal Go packages (black-box behavior).
 
 ## Non-goals
@@ -35,7 +37,8 @@ Container topology and networking details are specified in [design-containers].
 - Runtime: `docker compose up -d --build --force-recreate`
   - This repo uses a sidecar topology where some services share a network namespace via `network_mode: service:ssh-bastion`.
   - If `ssh-bastion` is recreated without recreating the sidecars, the sidecars may remain attached to the *previous* container network namespace, causing DNS/SSH flakiness.
-- Persistence: bind mount `./_tmp/data:/data`
+- Persistence: bind mount `${SSHBASTION_HOST_DATA_DIR}:/data`
+  - E2E scripts should set `SSHBASTION_HOST_DATA_DIR` to a per-run directory under `./_tmp/`.
 - Auth: docker-compose runs the web app in test mode via `SSHBASTION_AUTH_OVERRIDE_USER_ID` / `SSHBASTION_AUTH_OVERRIDE_EMAIL`
 
 ## Test implementation
@@ -46,8 +49,19 @@ Container topology and networking details are specified in [design-containers].
   - All `make` targets are expected to be invoked from the repo root.
   - Each `e2e/scripts/e2e-NN-*.sh` script should also be runnable standalone.
 - Temporary files live under `./_tmp/`.
-  - Persistent test state: `./_tmp/data/` (bind-mounted to `/data` in containers)
-  - SSH E2E keys (if generated): `./_tmp/` (e.g. `./_tmp/id_e2e`)
+  - Each E2E script should create its own per-run directory with `mktemp -d ./_tmp/e2e-XXXXXXXX`.
+  - Bind-mounted test state: `./_tmp/e2e-XXXXXXXX/data/` (bind-mounted to `/data` in containers)
+  - SSH E2E keys/config (if generated): under that per-run directory
+  - Scripts must clean up their per-run directory on exit.
+
+### Script naming (skip / xfail)
+
+- Default runner scope: `make e2e` discovers `./e2e/scripts/e2e-NN-*.sh` and runs them in lexicographic order.
+- Scripts with special markers in their filename are intentionally *skipped* by `make e2e`:
+  - `e2e-NN-xfail-*.sh`: known-broken scenario that is expected to fail until a tracked fix lands.
+  - `e2e-NN-skip-*.sh`: scenario that is intentionally not run by default (e.g. manual-only).
+  - (also recognized for convenience: `-known-fail-`, `-quarantine-`)
+- Skipped scripts should still be runnable manually (e.g. `bash e2e/scripts/e2e-30-xfail-...sh`).
 
 ### Go tests
 
@@ -57,14 +71,14 @@ Container topology and networking details are specified in [design-containers].
 - Behavior:
   - interacts with `http://localhost:8080` using `net/http`
   - interacts with `127.0.0.1:5353` using a DNS client
-  - inspects `./_tmp/data` contents on disk
+  - inspects E2E data directory contents on disk (via `SSHBASTION_E2E_DATA_DIR`)
 
 ### Makefile orchestration
 
 The Makefile owns the public targets, but the orchestration script lives under `./e2e/scripts/`.
 
 - `make e2e-clean`
-  - removes contents under `./_tmp/data` (ensures no state leakage)
+  - removes contents under `./_tmp/data` (the default data dir for ad-hoc/manual runs)
 - `make e2e-up`
   - starts services with `docker compose up -d --build --force-recreate`
 - `make e2e-down`
@@ -78,7 +92,7 @@ Implementation note:
   - `e2e-10-go-test.sh`: docker-compose + Go `-tags=e2e` black-box checks (HTTP/DNS/files)
   - `e2e-20-ssh-login.sh`: OpenSSH-based login scenario (ssh-keygen/register/ssh)
 - Convention: `e2e-NN-*.sh` scripts must be runnable standalone (they handle setup and cleanup).
-- Convention: helper sub-scripts live under `./e2e/scripts/steps/` and are invoked by `e2e-NN-*.sh`.
+- Convention: helper sub-scripts may live under `./e2e/scripts/steps/` if needed.
 
 ## What we verify
 
@@ -86,10 +100,12 @@ Implementation note:
 
 - `GET /` returns `200` (readiness)
 
-### Generated files (./_tmp/data)
+### Generated files (data dir)
 
-- `./_tmp/data/dns/dnsmasq.d/generated.conf` exists and contains the expected `cname=` line.
-- `./_tmp/data/dns/aliases.json` contains the created alias.
+- `<data-dir>/dns/dnsmasq.d/generated.conf` exists and contains the expected `cname=` line.
+- `<data-dir>/dns/aliases.json` contains the created alias.
+
+Where `<data-dir>` is the host directory bind-mounted to `/data` (typically `./_tmp/e2e-XXXXXXXX/data`).
 
 ### DNS (5353)
 
