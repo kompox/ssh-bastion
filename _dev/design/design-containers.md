@@ -2,7 +2,7 @@
 id: design-containers
 title: Containers (image + runtime topology)
 status: draft
-updated: 2026-01-03T06:29:52Z
+updated: 2026-01-03T07:34:39Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Containers (image + runtime topology)
@@ -141,6 +141,28 @@ This allows dnsmasq to delegate “non-alias” queries back to Docker’s resol
 
 ## Operational notes
 
+### CI build (multi-architecture) and publishing (GHCR)
+
+- The image is published to GHCR as `ghcr.io/kompox/ssh-bastion`.
+- CI builds a multi-architecture image using QEMU + Buildx:
+  - `linux/amd64`
+  - `linux/arm64`
+- Triggers:
+  - push to `main`
+  - push of tags matching `v*`
+- Tags:
+  - `main` (updated on pushes to `main`)
+  - `latest` (updated on pushes of `v*` tags)
+  - `v*` (the pushed Git tag)
+
+Operator notes:
+
+- GHCR package page: https://github.com/kompox/ssh-bastion/pkgs/container/ssh-bastion
+- Pull examples:
+  - `docker pull ghcr.io/kompox/ssh-bastion:main`
+  - `docker pull ghcr.io/kompox/ssh-bastion:latest`
+  - `docker pull ghcr.io/kompox/ssh-bastion:vX.Y.Z`
+
 ### Reloading dnsmasq after changes
 
 - Local docker-compose (MVP): restart the `dnsmasq` service to pick up regenerated `*.conf` files.
@@ -162,6 +184,9 @@ This allows dnsmasq to delegate “non-alias” queries back to Docker’s resol
 
 - [design-overview] - Design overview document
 - [design-webapp-routes] - Web app routes & sitemap
+- Workflow: [docker-build.yml](../../.github/workflows/docker-build.yml)
+- [design-roadmap] - Development Roadmap
 
 [design-overview]: ../design/design-overview.md
 [design-webapp-routes]: ../design/design-webapp-routes.md
+[design-roadmap]: ../design/design-roadmap.md
