@@ -1,4 +1,5 @@
 .PHONY: help clean build test run-test-mode e2e-clean e2e-up e2e-down e2e
+.PHONY: git-diff-cached git-commit-with-editor
 
 help:
 	@echo "Targets:"; \
@@ -10,6 +11,12 @@ help:
 	echo "  e2e-up        docker compose up -d --build (debug helper)"; \
 	echo "  e2e-down      docker compose down (debug helper)"; \
 	echo "  e2e           Run all e2e/scripts/e2e-NN-*.sh scenarios"
+
+git-diff-cached:
+	git --no-pager diff --cached
+
+git-commit-with-editor:
+	git -c core.editor='code --wait' commit -v -e -F $(lastword $(sort $(wildcard _tmp/git-commit/*.txt)))
 
 clean:
 	@# Remove built binary and wipe persisted bind-mounted data.
