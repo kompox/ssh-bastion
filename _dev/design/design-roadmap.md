@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-04T10:00:02Z
+updated: 2026-01-04T10:03:27Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -11,19 +11,20 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 
 ## IN-PROGRESS
 
-## TODO
-
 ### Roles: admin and user
 
 - Introduce roles to control access levels
 - Configuration (environment variables):
   - `SSHBASTION_ROLE_ADMIN_IDS`: comma-separated list of admin user IDs
   - `SSHBASTION_ROLE_DEFAULT`: default role for users not in the admin list (default: `user`)
+- Task: [task-20260104e-roles-admin-user](../tasks/task-20260104e-roles-admin-user.md)
 
 |Role|Capabilities|
 |-|-|
 |`admin`|Full access to all users' keys and DNS aliases|
 |`user`|Manage own keys and DNS aliases only|
+
+## TODO
 
 ### Permissions: SSH public keys
 
@@ -34,6 +35,11 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 
 - `admin`: manage DNS alias rules
 - `user`: no access (cannot view or change)
+
+### Permissions: Home page editing
+
+- `admin`: view and edit the home page content (`/admin` route)
+- `user`: view only
 
 ### Container entrypoints
 
