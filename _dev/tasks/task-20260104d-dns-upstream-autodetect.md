@@ -1,8 +1,8 @@
 ---
 id: task-20260104d-dns-upstream-autodetect
 title: DNS proxy - upstream autodetect from resolv.conf
-status: in-progress
-updated: 2026-01-04T09:38:25Z
+status: done
+updated: 2026-01-04T09:57:58Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 
@@ -32,21 +32,39 @@ Implement upstream DNS selection logic so the DNS proxy works without explicit u
 - Adding caching.
 - Changing how `sshd` is pointed at `127.0.0.1`.
 
+## Spec summary
+
+- Upstream selection precedence: `-dns-upstream` flag > `SSHBASTION_DNS_UPSTREAM` env > `/etc/resolv.conf` (first `nameserver`, add `:53`; IPv6 bracket form).
+- Startup behavior: if DNS is enabled and no upstream can be determined, fail fast with a clear error.
+- Developer helpers: `make run-test-mode` relies on autodetect (no manual `/etc/resolv.conf` parsing).
+
 ## Plan & Checklist
 
-- [ ] 1) Define upstream selection order
-- [ ] 2) Implement `/etc/resolv.conf` parsing helper
-- [ ] 3) Wire selection into `ssh-bastion serve` defaulting behavior
-- [ ] 4) Add unit tests for:
-  - [ ] IPv4 nameserver
-  - [ ] IPv6 nameserver
-  - [ ] Missing/empty resolv.conf
-- [ ] 5) Ensure docs and flags/env vars remain consistent
+- [x] 1) Define upstream selection order
+- [x] 2) Implement `/etc/resolv.conf` parsing helper
+- [x] 3) Wire selection into `ssh-bastion serve` defaulting behavior
+- [x] 4) Add unit tests for:
+  - [x] IPv4 nameserver
+  - [x] IPv6 nameserver
+  - [x] Missing/empty resolv.conf
+- [x] 5) Ensure docs and flags/env vars remain consistent
+- [x] 6) Refactor `run-test-mode` target to align with autodetect
 
 ## Progress
 
 - 2026-01-04T09:36:58Z
   - Task created (moved from roadmap TODO to IN-PROGRESS)
+
+- 2026-01-04T09:43:52Z
+  - Implemented upstream selection precedence: flag > env > `/etc/resolv.conf`
+  - Added resolv.conf parsing + IPv6 bracket formatting
+  - Added unit tests and verified with `make test`
+
+- 2026-01-04T09:44:55Z
+  - Only resolve upstream when DNS is enabled (HTTP-only mode does not require DNS config)
+
+- 2026-01-04T09:55:00Z
+  - Updated `make run-test-mode` to rely on upstream autodetect (no manual resolv.conf parsing)
 
 ## References
 
