@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-04T06:56:48Z
+updated: 2026-01-04T07:54:06Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -11,7 +11,22 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 
 ## IN-PROGRES
 
+### Web app: site map and routing update
+
+- Site map:
+  - `/` frontpage (reads markdown from `${SSHBASTION_DATA_DIR}/content/pages/frontpage.md`; default base: `/data`; missing file shows placeholder)
+  - `/ssh` SSH key management (move existing key endpoints under `/ssh`)
+  - `/dns` DNS alias management (no change until roles/permissions exist)
+  - `/admin` placeholder (future use)
+- TODO: update [design-webapp-routes]; migrate `/keys` → `/ssh/keys` (redirects/tests); add `/` + `/admin`
+- Approach: HTMX + server-rendered HTML for MVP; defer adding `/api/*` until a real REST/JSON need emerges
+- Task: [task-20260104b-webapp-routing-update](../tasks/task-20260104b-webapp-routing-update.md)
+
 ## TODO
+
+### Docs: design docs update
+
+- Eliminate mentions of dnsmasq sidecar in design docs
 
 ### Roles: admin and user
 
@@ -132,6 +147,8 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 
 - [design-overview] - Design overview document
 - [design-containers] - Containers (image + runtime topology)
+- [design-webapp-routes] - Web App Routes & Sitemap
 
 [design-overview]: ../design/design-overview.md
 [design-containers]: ../design/design-containers.md
+[design-webapp-routes]: ../design/design-webapp-routes.md
