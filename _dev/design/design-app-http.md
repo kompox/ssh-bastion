@@ -2,7 +2,7 @@
 id: design-app-http
 title: App HTTP (Routes & Sitemap)
 status: stable
-updated: 2026-01-04T11:07:34Z
+updated: 2026-01-04T11:51:33Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # App HTTP (Routes & Sitemap)
@@ -36,7 +36,7 @@ Roles:
 |Role|Key permissions|DNS alias permissions|Home/admin permissions|
 |-|-|-|-|
 |`admin`|Manage all users’ SSH public keys|Manage DNS alias rules|View and edit home content via `/admin`|
-|`user`|Manage own SSH public keys only|No access (cannot view or change)|View home only|
+|`user`|Manage own SSH public keys only|No access (cannot view or change)|No access to `/admin`; view home only|
 
 Note: route-level authorization enforcement may lag behind this document.
 
@@ -52,12 +52,27 @@ Note: route-level authorization enforcement may lag behind this document.
 - `GET /ssh`
   - `200 OK`: SSH Keys page
   - Access: `admin`, `user`
-- `GET /dns`
-  - `200 OK`: DNS Aliases page
-  - Access: `admin` only
 - `GET /admin`
-  - `200 OK`: Placeholder page (future use)
+  - `200 OK`: Admin dashboard
   - Access: `admin` only
+
+Admin pages (HTMX HTML pages; no compatibility routes):
+
+- `GET /admin/users`
+  - `200 OK`: Users admin page
+  - Access: `admin` only
+  - List derived from current key owners
+  - Display both `email` (primary) and `userID`
+- `GET /admin/keys`
+  - `200 OK`: SSH keys admin page (all users)
+  - Access: `admin` only
+- `GET /admin/dns`
+  - `200 OK`: DNS aliases admin page
+  - Access: `admin` only
+
+Removed routes (no compatibility):
+
+- `/dns` (no redirect)
 
 ### Key operations (POST)
 
@@ -78,15 +93,19 @@ Note: route-level authorization enforcement may lag behind this document.
   - `400`: key not found → render `/ssh` with `flash-warning`
   - Access: `admin` (any user), `user` (own keys)
 
-### DNS operations (POST)
+### Admin operations (POST)
 
-- `POST /dns`
-  - `303`: add alias success → redirect to `/dns`
-  - `400`: validation error → render `/dns` with `flash-error`
+Admin operations are grouped per page:
+
+- (none yet) `/admin/users` (GET only)
+- (none yet) `/admin/keys` (GET only)
+- `POST /admin/dns`
+  - `303`: add alias success → redirect to `/admin/dns`
+  - `400`: validation error → render `/admin/dns` with `flash-error`
   - Access: `admin` only
-- `POST /dns/{source}/delete`
-  - `303`: delete success → redirect to `/dns`
-  - `400`: alias not found → render `/dns` with `flash-warning`
+- `POST /admin/dns/{source}/delete`
+  - `303`: delete success → redirect to `/admin/dns`
+  - `400`: alias not found → render `/admin/dns` with `flash-warning`
   - Access: `admin` only
 
 ## Sitemap
@@ -101,12 +120,18 @@ Note: route-level authorization enforcement may lag behind this document.
   (POST /ssh/keys/{fp}/disable)   Disable key
   (POST /ssh/keys/{fp}/delete)    Delete key
 
-/dns
-  (POST /dns)                 Add alias
-  (POST /dns/{source}/delete) Delete alias
-
 /admin
-  Placeholder (future use)
+  Admin dashboard
+
+/admin/users
+  GET only
+
+/admin/keys
+  GET only
+
+/admin/dns
+  (POST /admin/dns)                 Add alias
+  (POST /admin/dns/{source}/delete) Delete alias
 ```
 
 ## References
