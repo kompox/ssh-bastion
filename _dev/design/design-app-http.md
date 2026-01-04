@@ -2,7 +2,7 @@
 id: design-app-http
 title: App HTTP (Routes & Sitemap)
 status: stable
-updated: 2026-01-04T12:30:22Z
+updated: 2026-01-04T12:53:35Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # App HTTP (Routes & Sitemap)
@@ -58,6 +58,9 @@ Note: route-level authorization enforcement may lag behind this document.
 
 Admin pages (HTMX HTML pages; no compatibility routes):
 
+- `GET /admin/home`
+  - `200 OK`: Home page markdown editor
+  - Access: `admin` only
 - `GET /admin/users`
   - `200 OK`: Users admin page
   - Access: `admin` only
@@ -98,6 +101,10 @@ Removed routes (no compatibility):
 
 Admin operations are grouped per page:
 
+- `POST /admin/home`
+  - `303`: save success → redirect to `/admin/home`
+  - `400`: validation error → render `/admin/home` with `flash-error`
+  - Access: `admin` only
 - (none yet) `/admin/users` (GET only)
 - (none yet) `/admin/keys` (GET only)
 - `POST /admin/dns`
@@ -123,6 +130,9 @@ Admin operations are grouped per page:
 
 /admin
   Admin dashboard
+
+/admin/home
+  (POST /admin/home)               Save home markdown
 
 /admin/users
   GET only

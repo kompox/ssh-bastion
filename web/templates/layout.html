@@ -40,6 +40,8 @@
             {{template "home_content" .}}
         {{else if eq .Page "admin"}}
             {{template "admin_content" .}}
+        {{else if eq .Page "admin_home"}}
+            {{template "admin_home_content" .}}
         {{else if eq .Page "admin_users"}}
             {{template "admin_users_content" .}}
         {{else if eq .Page "admin_keys"}}

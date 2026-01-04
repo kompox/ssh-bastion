@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-04T12:39:35Z
+updated: 2026-01-04T13:03:47Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -10,11 +10,6 @@ assistedBy: github/copilot (vscode) gpt-5.2
 This roadmap complements [design-overview]. Container-specific decisions are tracked in [design-containers].
 
 ## IN-PROGRESS
-
-### Admin: Home page markdown editing
-
-- Form-based editing of the home page markdown content (`/admin` route or `/admin/home`)
-- Task: [task-20260104g-admin-home-editing](../tasks/task-20260104g-admin-home-editing.md)
 
 ## TODO
 
@@ -50,6 +45,12 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
   - Minimal “how to run locally” notes (test mode + data dir)
 
 ## DONE
+
+### Admin: Home page markdown editing
+
+- Implement admin-only markdown editor for the home page content (`/admin/home`)
+- Edit/save `${SSHBASTION_DATA_DIR}/content/pages/home.md` with basic size limit and success message
+- Task: [task-20260104g-admin-home-editing](../tasks/task-20260104g-admin-home-editing.md)
 
 ### Permissions: SSH keys, DNS, admin
 

@@ -1,0 +1,19 @@
+{{define "admin_home_content"}}
+<h1>Home Page</h1>
+
+<p>Edit the markdown rendered on the home page.</p>
+
+{{if .FlashMessage}}
+<article role="alert" class="flash flash-{{.FlashKind}}">
+    <p>{{.FlashMessage}}</p>
+</article>
+{{end}}
+
+<form method="POST" action="/admin/home">
+    <label>
+        Markdown
+        <textarea name="markdown" rows="20" required>{{.Markdown}}</textarea>
+    </label>
+    <button type="submit">Save</button>
+</form>
+{{end}}

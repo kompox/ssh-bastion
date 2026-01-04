@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -58,6 +59,7 @@ func Run(addr string) error {
 	mux.HandleFunc("GET /", srv.handleHome)
 	mux.HandleFunc("GET /ssh", srv.handleKeysPage)
 	mux.HandleFunc("GET /admin", srv.requireAdmin(srv.handleAdminPage))
+	mux.HandleFunc("GET /admin/home", srv.requireAdmin(srv.handleAdminHomePage))
 	mux.HandleFunc("GET /admin/users", srv.requireAdmin(srv.handleAdminUsersPage))
 	mux.HandleFunc("GET /admin/keys", srv.requireAdmin(srv.handleAdminKeysPage))
 	mux.HandleFunc("GET /admin/dns", srv.requireAdmin(srv.handleAdminDNSPage))
@@ -69,6 +71,7 @@ func Run(addr string) error {
 
 	mux.HandleFunc("POST /admin/dns", srv.requireAdmin(srv.handleAddAlias))
 	mux.HandleFunc("POST /admin/dns/{source}/delete", srv.requireAdmin(srv.handleDeleteAlias))
+	mux.HandleFunc("POST /admin/home", srv.requireAdmin(srv.handleAdminHomeSave))
 
 	handler := authMw.Authenticate(mux)
 
@@ -159,6 +162,123 @@ func (s *Server) handleAdminPage(w http.ResponseWriter, r *http.Request) {
 			"method", r.Method,
 			"path", r.URL.Path,
 			"status", http.StatusOK,
+		)
+	}
+}
+
+const maxHomeMarkdownBytes = 64 * 1024
+
+func (s *Server) handleAdminHomePage(w http.ResponseWriter, r *http.Request) {
+	email := auth.GetEmail(r)
+	role := auth.GetRole(r)
+
+	flashKind := ""
+	flashMsg := ""
+	if r.URL.Query().Get("saved") == "1" {
+		flashKind = "success"
+		flashMsg = "Saved"
+	}
+
+	md := ""
+	homePath := filepath.Join(s.cfg.DataDir, "content", "pages", "home.md")
+	b, err := os.ReadFile(homePath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			s.logError(err, "read admin home markdown failed",
+				"op", "admin_home_read",
+				"method", r.Method,
+				"path", r.URL.Path,
+			)
+			flashKind = "error"
+			flashMsg = "Failed to read home markdown"
+		}
+	} else {
+		md = string(b)
+	}
+
+	data := map[string]any{
+		"Title":        "Admin Home",
+		"Email":        email,
+		"Role":         role,
+		"Page":         "admin_home",
+		"Markdown":     md,
+		"FlashKind":    flashKind,
+		"FlashMessage": flashMsg,
+	}
+	if err := s.templates.ExecuteTemplate(w, "layout.html", data); err != nil {
+		s.logError(err, "template execution failed",
+			"op", "template_execute",
+			"template", "layout.html",
+			"page", "admin_home",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", http.StatusOK,
+		)
+	}
+}
+
+func (s *Server) handleAdminHomeSave(w http.ResponseWriter, r *http.Request) {
+	email := auth.GetEmail(r)
+	role := auth.GetRole(r)
+
+	// Parse form with a size cap.
+	r.Body = http.MaxBytesReader(w, r.Body, maxHomeMarkdownBytes+2048)
+	if err := r.ParseForm(); err != nil {
+		msg := "Invalid form"
+		if err == http.ErrBodyReadAfterClose || err == io.EOF {
+			msg = "Invalid form"
+		} else if strings.Contains(strings.ToLower(err.Error()), "http: request body too large") {
+			msg = fmt.Sprintf("Markdown too large (max %d bytes)", maxHomeMarkdownBytes)
+		}
+		s.renderAdminHomeEdit(w, r, http.StatusBadRequest, "", "error", msg, email, role)
+		return
+	}
+
+	md := r.FormValue("markdown")
+	if len(md) > maxHomeMarkdownBytes {
+		s.renderAdminHomeEdit(w, r, http.StatusBadRequest, md, "error", fmt.Sprintf("Markdown too large (max %d bytes)", maxHomeMarkdownBytes), email, role)
+		return
+	}
+
+	if s.store == nil {
+		s.renderAdminHomeEdit(w, r, http.StatusInternalServerError, md, "error", "Storage is not configured", email, role)
+		return
+	}
+
+	if err := s.store.AtomicWrite(filepath.Join("content", "pages", "home.md"), []byte(md)); err != nil {
+		s.logError(err, "write admin home markdown failed",
+			"op", "admin_home_write",
+			"method", r.Method,
+			"path", r.URL.Path,
+		)
+		s.renderAdminHomeEdit(w, r, http.StatusInternalServerError, md, "error", "Failed to save", email, role)
+		return
+	}
+
+	http.Redirect(w, r, "/admin/home?saved=1", http.StatusSeeOther)
+}
+
+func (s *Server) renderAdminHomeEdit(w http.ResponseWriter, r *http.Request, status int, md, flashKind, flashMsg, email, role string) {
+	data := map[string]any{
+		"Title":        "Admin Home",
+		"Email":        email,
+		"Role":         role,
+		"Page":         "admin_home",
+		"Markdown":     md,
+		"FlashKind":    flashKind,
+		"FlashMessage": flashMsg,
+	}
+	if status != http.StatusOK {
+		w.WriteHeader(status)
+	}
+	if err := s.templates.ExecuteTemplate(w, "layout.html", data); err != nil {
+		s.logError(err, "template execution failed",
+			"op", "template_execute",
+			"template", "layout.html",
+			"page", "admin_home",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", status,
 		)
 	}
 }
