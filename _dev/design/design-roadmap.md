@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-04T12:30:22Z
+updated: 2026-01-04T12:39:35Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -11,11 +11,12 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 
 ## IN-PROGRESS
 
-## TODO
-
 ### Admin: Home page markdown editing
 
-- Form-based editing of the home page markdown content (`/admin` route)
+- Form-based editing of the home page markdown content (`/admin` route or `/admin/home`)
+- Task: [task-20260104g-admin-home-editing](../tasks/task-20260104g-admin-home-editing.md)
+
+## TODO
 
 ### Container entrypoints
 
