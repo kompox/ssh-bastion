@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-03T17:55:31Z
+updated: 2026-01-04T03:19:54Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -22,6 +22,17 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 - Rebuild the container image using a glibc-based base image (e.g., `debian:stable-slim` or `ubuntu:latest`)
 - Ensure that sshd can resolve CNAME to A records correctly
 - Task: [task-20260103f-container-rebuild-glibc](../tasks/task-20260103f-container-rebuild-glibc.md)
+
+### DNS alias: query rewrite proxy
+
+- Run a minimal DNS forwarder inside ssh-bastion (in-process): listen on UDP :53
+- Rewrite only QNAME based on aliases configured in the web app (e.g. `hoge.local` -> `github.com`)
+- Forward the rewritten query to an upstream DNS server and return the response
+- Rewrite the owner name back to the original QNAME for `A`/`AAAA` records only
+- Eliminate the dnsmasq sidecar container in docker-compose
+- Eliminate the dnsmasq sidecar container in docker-compose
+- Expose service selection via `ssh-bastion serve` flags (web only, DNS only, or both)
+- Task: [task-20260104a-dns-query-rewrite-proxy](../tasks/task-20260104a-dns-query-rewrite-proxy.md)
 
 ## TODO
 
@@ -50,8 +61,7 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 ### Container entrypoints
 
 - Support primary entrypoints:
-  - `ssh-bastion web` (web app + generates files)
-  - `ssh-bastion dns` (runs dnsmasq using generated config)
+  - `ssh-bastion serve` (runs selected services in one process)
 - Optional debug helpers:
   - `ssh-bastion render authorized-keys`
   - `ssh-bastion render dnsmasq-conf`
