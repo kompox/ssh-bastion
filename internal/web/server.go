@@ -453,14 +453,6 @@ func (s *Server) handleAddAlias(w http.ResponseWriter, r *http.Request) {
 		"path", r.URL.Path,
 	)
 
-	if err := s.dnsRegistry.RenderDnsmasqConf(); err != nil {
-		s.logError(err, "render dnsmasq config failed",
-			"op", "dnsmasq_conf_render",
-			"method", r.Method,
-			"path", r.URL.Path,
-		)
-	}
-
 	http.Redirect(w, r, "/dns", http.StatusSeeOther)
 }
 
@@ -521,14 +513,6 @@ func (s *Server) handleDeleteAlias(w http.ResponseWriter, r *http.Request) {
 		"method", r.Method,
 		"path", r.URL.Path,
 	)
-
-	if err := s.dnsRegistry.RenderDnsmasqConf(); err != nil {
-		s.logError(err, "render dnsmasq config failed",
-			"op", "dnsmasq_conf_render",
-			"method", r.Method,
-			"path", r.URL.Path,
-		)
-	}
 
 	http.Redirect(w, r, "/dns", http.StatusSeeOther)
 }

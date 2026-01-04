@@ -52,17 +52,11 @@ main() {
   done
   curl -fsS "${http_base}/" >/dev/null
 
-  go test -tags=e2e -v ./e2e -count=1 -run TestE2E_GenerateDnsmasqConf -timeout 2m
-
-  # dnsmasq does not auto-reload config; restart to pick up regenerated *.conf.
-  docker compose restart dnsmasq
+  go test -tags=e2e -v ./e2e -count=1 -run TestE2E_AliasIsPersisted -timeout 2m
 
   go test -tags=e2e -v ./e2e -count=1 -run TestE2E_DNSResolvesAlias -timeout 2m
 
   go test -tags=e2e -v ./e2e -count=1 -run TestE2E_DeleteDnsAlias -timeout 2m
-
-  # dnsmasq does not auto-reload config; restart to pick up regenerated *.conf.
-  docker compose restart dnsmasq
 
   go test -tags=e2e -v ./e2e -count=1 -run TestE2E_DNSDoesNotResolveAlias -timeout 2m
 }

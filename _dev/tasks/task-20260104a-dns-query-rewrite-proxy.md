@@ -1,8 +1,8 @@
 ---
 id: task-20260104a-dns-query-rewrite-proxy
 title: DNS query rewrite proxy (replace dnsmasq)
-status: todo
-updated: 2026-01-04T03:19:54Z
+status: in-progress
+updated: 2026-01-04T06:28:48Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 
@@ -39,20 +39,62 @@ A known pain point is that alias resolution can depend on cache state (e.g. CNAM
 
 ## Plan & Checklist
 
-- [ ] Introduce `ssh-bastion serve` and flags to select services (web only, DNS only, or both).
-- [ ] Implement UDP listener on :53 and forwarding to upstream (default to Docker DNS `127.0.0.11:53` in compose).
-- [ ] Implement QNAME rewrite based on aliases.
-- [ ] Implement response rewrite for A/AAAA owner name only (original QNAME).
-- [ ] Update `compose.yml` to remove dnsmasq and ensure sshd uses the in-process DNS server.
-- [ ] Add/adjust E2E tests:
-  - [ ] DNS alias resolves to A/AAAA without relying on CNAME-only.
-  - [ ] ProxyJump scenario stops failing due to name resolution.
-- [ ] Update docs (design + README if needed).
+This is structured as a step-by-step runbook so it's easy to see what's done and what's next.
+
+- [x] 1) Implement in-process DNS query rewrite proxy (UDP)
+  - [x] Read aliases from existing storage (`aliases.json` via registry)
+  - [x] Rewrite incoming QNAME when it matches an alias (A/AAAA only)
+  - [x] Forward to upstream resolver
+  - [x] Rewrite owner name back to original QNAME for A/AAAA records only
+  - [x] For non-A/AAAA QTYPEs, return NODATA (NOERROR + empty answer)
+  - [x] Add unit tests using an embedded UDP upstream server
+
+- [x] 2) Add `ssh-bastion serve` command + flags for service selection
+  - [x] `-http` / `-http-addr` (default enabled)
+  - [x] `-dns` / `-dns-addr` / `-dns-upstream` (default disabled)
+  - [x] Keep `web` as a back-compat alias for HTTP-only
+
+- [x] 3) Web app behavior: persist aliases only (no dnsmasq artifact generation)
+  - [x] Remove dnsmasq config rendering calls from add/delete alias handlers
+
+- [x] 4) Local container wiring (replace dnsmasq sidecar)
+  - [x] Dockerfile: remove dnsmasq dependency and default to `serve`
+  - [x] compose.yml: remove dnsmasq service; run `serve` with `-dns=true`; publish UDP 53
+
+- [x] 5) Update E2E expectations & harness
+  - [x] Replace dnsmasq-generated-conf assertions with `aliases.json` persistence checks
+  - [x] DNS E2E expects A answer for alias (no CNAME chasing)
+  - [x] Remove dnsmasq restarts from scripts
+
+- [x] 6) Verify build + unit tests
+  - [x] `go test ./...`
+  - [x] `make build`
+
+- [ ] 7) Run E2E suite and record results (do not fix unrelated failures)
+- [ ] 8) Docs follow-up (if needed) and mark task done
+  - [x] Manual app testing doc updated to prefer `make run-test-mode` (HTTP + DNS)
+  - [ ] Mark task done
 
 ## Progress
 
 - 2026-01-04T03:12:04Z
   - Task created
+
+- 2026-01-04T03:58:59Z
+  - Fixed corrupted `internal/dnsproxy/server.go` and implemented UDP query rewrite proxy + unit tests
+  - Added `ssh-bastion serve` command with `-http`/`-dns` flags; kept `web` as back-compat alias
+  - Removed dnsmasq config generation from the web app; updated compose/Dockerfile and adjusted E2E assertions
+  - Verified `go test ./...` and `make build`
+
+- 2026-01-04T06:26:35Z
+  - Makefile: `make run-test-mode` now starts HTTP + DNS via `ssh-bastion serve` (DNS on UDP :5353)
+  - Docs
+    - Renamed `_dev/design/design-manual-testing.md` to `_dev/design/design-app-testing.md`
+    - Refreshed manual app testing doc (scope clarified: app behavior only; no compose/SSH manual tests)
+  - DNS proxy behavior hardened:
+    - Apply alias rewrite only for A/AAAA queries
+    - Block non-A/AAAA QTYPEs by returning NODATA (avoids SERVFAIL from upstream quirks)
+  - Verified `make test`
 
 ## References
 

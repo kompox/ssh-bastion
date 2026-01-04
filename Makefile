@@ -6,7 +6,7 @@ help:
 	echo "  clean         Remove built binary and wipe ./_tmp/data (via helper container)"; \
 	echo "  build         Build ./ssh-bastion"; \
 	echo "  test          Run Go unit tests"; \
-	echo "  run-test-mode Run web server locally with override identity"; \
+	echo "  run-test-mode Run HTTP+DNS locally with override identity"; \
 	echo "  e2e-clean     Wipe bind-mounted /data contents (debug helper)"; \
 	echo "  e2e-up        docker compose up -d --build --force-recreate (debug helper)"; \
 	echo "  e2e-down      docker compose down (debug helper)"; \
@@ -39,16 +39,28 @@ test:
 	go test -v ./...
 
 run-test-mode: build
-	@# Run the web server locally with override identity (no auth proxy required).
+	@# Run HTTP + DNS locally with override identity (no auth proxy required).
 	@echo "Starting ssh-bastion (test mode)"
 	@echo "Open: http://localhost:8080/"
+	@echo "DNS:  udp://127.0.0.1:5353"
+	@echo "Try:  dig @127.0.0.1 -p 5353 example.com A +short"
 	@echo "Stop: Ctrl+C"
 	@mkdir -p ./_tmp/data
-	@SSHBASTION_DATA_DIR="_tmp/data" \
+	@UPSTREAM_IP=$$(awk '/^nameserver/{print $$2; exit}' /etc/resolv.conf); \
+	if [ -z "$$UPSTREAM_IP" ]; then \
+		echo "ERROR: Could not detect DNS upstream from /etc/resolv.conf" >&2; \
+		exit 1; \
+	fi; \
+	case "$$UPSTREAM_IP" in \
+		*:*) UPSTREAM="[$$UPSTREAM_IP]:53" ;; \
+		*)   UPSTREAM="$$UPSTREAM_IP:53" ;; \
+	esac; \
+	SSHBASTION_DATA_DIR="_tmp/data" \
 	SSHBASTION_AUTH_MODE="easy_auth" \
 	SSHBASTION_AUTH_OVERRIDE_USER_ID="test-user-123" \
 	SSHBASTION_AUTH_OVERRIDE_EMAIL="developer@localhost" \
-	./ssh-bastion web
+	SSHBASTION_DNS_UPSTREAM="$$UPSTREAM" \
+	./ssh-bastion serve -http=true -dns=true -dns-addr ":5353"
 
 e2e-clean:
 	@# Debug helper: wipe bind-mounted /data contents.

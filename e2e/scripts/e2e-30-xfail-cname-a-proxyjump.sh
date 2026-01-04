@@ -5,7 +5,7 @@ set -euo pipefail
 #
 # What this tests
 # - Create DNS alias: hoge.local -> github.com
-# - Restart dnsmasq (cache cold)
+# - (Previously) restart dnsmasq (cache cold)
 # - Attempt: ssh -J (via local sshd container) to git@hoge.local
 #
 # Expected current behavior (known issue)
@@ -99,9 +99,8 @@ if [ "$status" != "303" ]; then
   exit 1
 fi
 
-# dnsmasq does not auto-reload config; restart to pick up regenerated *.conf.
-# Also ensures dnsmasq cache is cold for repro.
-docker compose restart dnsmasq
+aliases_json="${host_data_dir}/dns/aliases.json"
+wait_for "aliases.json contains hoge.local alias" 30 grep -Fq "hoge.local" "${aliases_json}"
 
 known_hosts_file="${tmp_root}/known_hosts"
 ssh_config="${tmp_root}/ssh_config_e2e_cname_a"

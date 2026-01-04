@@ -15,7 +15,7 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /out/ssh-bastion ./cmd/
 
 FROM alpine:3.20
 
-RUN apk add --no-cache ca-certificates dnsmasq openssh-server
+RUN apk add --no-cache ca-certificates openssh-server
 
 # Runtime files
 WORKDIR /app
@@ -29,4 +29,4 @@ ENV SSHBASTION_DATA_DIR=/data
 EXPOSE 22 8080
 
 ENTRYPOINT ["ssh-bastion"]
-CMD ["web", "-addr", ":8080"]
+CMD ["serve", "-http-addr", ":8080"]

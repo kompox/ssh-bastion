@@ -2,7 +2,7 @@ services:
   ssh-bastion:
     build: .
     image: ssh-bastion:local
-    command: ["web", "-addr", ":8080"]
+    command: ["serve", "-http-addr", ":8080", "-dns=true", "-dns-addr", ":53", "-dns-upstream", "127.0.0.11:53"]
     environment:
       SSHBASTION_DATA_DIR: /data
       SSHBASTION_AUTH_MODE: easy_auth
@@ -15,26 +15,6 @@ services:
       - "2222:22"
       - "8080:8080"
       - "5353:53/udp"
-      - "5353:53/tcp"
-
-  dnsmasq:
-    image: ssh-bastion:local
-    depends_on:
-      - ssh-bastion
-    network_mode: service:ssh-bastion
-    entrypoint: ["dnsmasq"]
-    command:
-      - -k
-      - --log-facility=-
-      # Must listen on the container interface so that Docker's published ports
-      # (e.g. 5353->53) can forward queries successfully.
-      - --listen-address=0.0.0.0
-      - --bind-interfaces
-      - --no-resolv
-      - --server=127.0.0.11
-      - --conf-dir=/data/dns/dnsmasq.d,*.conf
-    volumes:
-      - ${SSHBASTION_HOST_DATA_DIR:-./_tmp/data}:/data
 
   sshd:
     image: ssh-bastion:local
