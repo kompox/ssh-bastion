@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-04T21:26:40Z
+updated: 2026-01-04T23:03:03Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -10,6 +10,17 @@ assistedBy: github/copilot (vscode) gpt-5.2
 This roadmap complements [design-overview]. Container-specific decisions are tracked in [design-containers].
 
 ## IN-PROGRESS
+
+### Kubernetes manifests / Helm
+
+- Add initial manifests (or a Helm chart):
+  - Deployment: 1 Pod / 2 containers (sshd + ssh-bastion)
+  - Services: SSH (LoadBalancer) + web (cluster-internal)
+  - PVC for `/data`
+  - Health checks/readiness
+  - SecurityContext with minimal capabilities (likely `CAP_NET_BIND_SERVICE` for ports 22/53)
+- Chart name: `kompox-ssh-bastion` (avoid collisions with existing `ssh-bastion` charts)
+- Task: [task-20260104i-k8s-manifests-helm](../tasks/task-20260104i-k8s-manifests-helm.md)
 
 ## TODO
 
@@ -22,15 +33,6 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 - Define/implement reload behavior when generated files change:
   - DNS proxy: changes take effect without reload (reads alias registry at query time)
   - sshd: ensure it picks up updated `authorized_keys` reliably
-
-### Kubernetes manifests / Helm
-
-- Add initial manifests (or a Helm chart):
-  - Deployment: 1 Pod / 2 containers (sshd + ssh-bastion)
-  - Services: SSH (LoadBalancer) + web (cluster-internal)
-  - PVC for `/data`
-  - Health checks/readiness
-  - SecurityContext with minimal capabilities (likely `CAP_NET_BIND_SERVICE` for ports 22/53)
 
 ### Security hardening decisions
 
