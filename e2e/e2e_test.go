@@ -59,7 +59,6 @@ func TestE2E_DNSResolvesAlias(t *testing.T) {
 	dnsAddr := getEnvDefault("SSHBASTION_E2E_DNS_ADDR", "127.0.0.1:5353")
 
 	source := "e2e.local"
-	destination := "ssh-bastion"
 
 	name := dns.Fqdn(source)
 
@@ -105,7 +104,6 @@ func TestE2E_DeleteDnsAlias(t *testing.T) {
 	dataDir := getDataDir()
 
 	source := "e2e.local"
-	destination := "ssh-bastion"
 
 	client := &http.Client{
 		Timeout: 10 * time.Second,
@@ -146,14 +144,14 @@ func TestE2E_DNSDoesNotResolveAlias(t *testing.T) {
 	for time.Now().Before(deadline) {
 		msg := new(dns.Msg)
 		msg.SetQuestion(name, dns.TypeA)
-		// Disable recursion so we only validate dnsmasq's locally configured answers.
+		// Disable recursion so we only validate locally configured answers.
 		// This avoids depending on upstream DNS behavior for non-existent names.
 		msg.RecursionDesired = false
 
 		retryOverTCP := false
 		resp, _, err := udpClient.Exchange(msg, dnsAddr)
 		if err != nil {
-			// dnsmasq can occasionally return a UDP response that is truncated
+			// Some DNS servers can occasionally return UDP responses that are truncated
 			// mid-record (or otherwise unparsable). Retry over TCP for stability.
 			if strings.Contains(err.Error(), "overflow unpacking") {
 				retryOverTCP = true

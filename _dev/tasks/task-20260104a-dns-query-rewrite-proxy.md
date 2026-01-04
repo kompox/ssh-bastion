@@ -1,8 +1,8 @@
 ---
 id: task-20260104a-dns-query-rewrite-proxy
 title: DNS query rewrite proxy (replace dnsmasq)
-status: in-progress
-updated: 2026-01-04T06:28:48Z
+status: done
+updated: 2026-01-04T07:06:27Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 
@@ -70,10 +70,10 @@ This is structured as a step-by-step runbook so it's easy to see what's done and
   - [x] `go test ./...`
   - [x] `make build`
 
-- [ ] 7) Run E2E suite and record results (do not fix unrelated failures)
-- [ ] 8) Docs follow-up (if needed) and mark task done
+- [x] 7) Run E2E suite and record results (do not fix unrelated failures)
+- [x] 8) Docs follow-up (if needed) and mark task done
   - [x] Manual app testing doc updated to prefer `make run-test-mode` (HTTP + DNS)
-  - [ ] Mark task done
+  - [x] Mark task done
 
 ## Progress
 
@@ -96,13 +96,22 @@ This is structured as a step-by-step runbook so it's easy to see what's done and
     - Block non-A/AAAA QTYPEs by returning NODATA (avoids SERVFAIL from upstream quirks)
   - Verified `make test`
 
+- 2026-01-04T06:51:36Z
+  - E2E: fixed a Go build failure in `e2e/e2e_test.go` (unused vars / stale dnsmasq wording)
+  - E2E: added a Makefile preflight check to fail fast if fixed ports are already in use (common cause: local `make run-test-mode`)
+  - Docs: updated `design-e2e-testing` to reflect the in-process DNS proxy (no dnsmasq) and fixed-port assumptions
+  - E2E: ProxyJump DNS-alias scenario is now stable and runs under `make e2e`
+
+- 2026-01-04T07:06:27Z
+  - Task doc hygiene: fixed a duplicate checklist item; aligned status spelling to `canceled` across docs; glibc rebuild task is now marked canceled
+
 ## References
 
 - [design-roadmap] - Development roadmap
 - [design-containers] - Containers (topology and ports)
 - [design-e2e-testing] - E2E testing (docker-compose harness)
 - [task-20260103e-dns-alias-testing] - DNS alias testing (E2E)
-- [task-20260103f-container-rebuild-glibc] - glibc investigation (prior approach)
+- [task-20260103f-container-rebuild-glibc] - Container rebuild with glibc (canceled)
 
 [design-roadmap]: ../design/design-roadmap.md
 [design-containers]: ../design/design-containers.md

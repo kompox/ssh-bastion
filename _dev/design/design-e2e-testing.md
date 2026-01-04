@@ -2,7 +2,7 @@
 id: design-e2e-testing
 title: E2E / integration testing (docker-compose + published ports)
 status: draft
-updated: 2026-01-03T19:18:05Z
+updated: 2026-01-04T06:44:14Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: E2E / integration testing (docker-compose)
@@ -13,7 +13,8 @@ The E2E tests are intentionally “black-box”: they interact only with:
 
 - published ports from `docker compose up -d`
   - HTTP: `http://localhost:8080`
-  - DNS: `127.0.0.1:5353` (TCP/UDP)
+  - DNS: `127.0.0.1:5353` (UDP)
+  - SSH: `ssh -p 2222 jump@127.0.0.1`
 - the bind-mounted data directory (per-run) under `./_tmp/`
   - by default, E2E scripts use `mktemp -d ./_tmp/e2e-XXXXXXXX` and bind-mount `./_tmp/e2e-XXXXXXXX/data` to `/data`.
   - for ad-hoc/manual runs, the compose file supports a default of `./_tmp/data`.
@@ -25,7 +26,8 @@ Container topology and networking details are specified in [design-containers].
 - Provide a repeatable E2E test flow that validates the system as deployed by docker-compose.
 - Validate:
   - web server is reachable on `:8080`
-  - DNS sidecar answers on `:5353`
+  - DNS server answers on `:5353`
+  - SSH login works via the sshd sidecar on `:2222`
   - the web app generates expected files under the bind-mounted data directory
 - Keep tests independent from internal Go packages (black-box behavior).
 
@@ -40,6 +42,14 @@ Container topology and networking details are specified in [design-containers].
 - Persistence: bind mount `${SSHBASTION_HOST_DATA_DIR}:/data`
   - E2E scripts should set `SSHBASTION_HOST_DATA_DIR` to a per-run directory under `./_tmp/`.
 - Auth: docker-compose runs the web app in test mode via `SSHBASTION_AUTH_OVERRIDE_USER_ID` / `SSHBASTION_AUTH_OVERRIDE_EMAIL`
+
+## Assumptions / constraints
+
+- The E2E suite assumes the fixed published ports are available on the host:
+  - TCP 8080 (HTTP)
+  - UDP 5353 (DNS)
+  - TCP 2222 (SSH)
+- If you are running local dev (e.g. `make run-test-mode`), it may occupy UDP 5353 and cause E2E to fail. Stop it before running `make e2e`.
 
 ## Test implementation
 
@@ -62,6 +72,7 @@ Container topology and networking details are specified in [design-containers].
   - `e2e-NN-skip-*.sh`: scenario that is intentionally not run by default (e.g. manual-only).
   - (also recognized for convenience: `-known-fail-`, `-quarantine-`)
 - Skipped scripts should still be runnable manually (e.g. `bash e2e/scripts/e2e-30-xfail-...sh`).
+- Note: If an `-xfail-` scenario becomes stable, rename it to remove the marker so it runs under `make e2e`.
 
 ### Go tests
 
@@ -102,18 +113,14 @@ Implementation note:
 
 ### Generated files (data dir)
 
-- `<data-dir>/dns/dnsmasq.d/generated.conf` exists and contains the expected `cname=` line.
 - `<data-dir>/dns/aliases.json` contains the created alias.
 
 Where `<data-dir>` is the host directory bind-mounted to `/data` (typically `./_tmp/e2e-XXXXXXXX/data`).
 
 ### DNS (5353)
 
-- A query to `127.0.0.1:5353` for the E2E source name returns either:
-  - at least one A record, or
-  - a CNAME pointing at the configured destination (and that destination resolves to an A record)
-
-Note: dnsmasq reload is currently modeled as “restart the container” in docker-compose.
+- A query to `127.0.0.1:5353` for the E2E source name returns at least one A record with the owner name matching the queried name.
+- Non-address queries (anything other than A/AAAA) are intentionally not supported by the DNS proxy and should return NODATA (NOERROR + empty answer).
 
 ## References
 

@@ -1,8 +1,8 @@
 ---
 id: task-20260103e-dns-alias-testing
 title: DNS alias testing (E2E)
-status: in-progress
-updated: 2026-01-03T19:18:05Z
+status: done
+updated: 2026-01-04T06:51:36Z
 ---
 
 # Task: DNS alias testing (E2E)
@@ -17,7 +17,7 @@ Provide an end-to-end test for DNS alias functionality using the local docker-co
 
 - Add an E2E scenario that:
   - Creates a DNS alias via the web API.
-  - Verifies DNS resolution through dnsmasq.
+  - Verifies DNS resolution through the in-process DNS proxy.
   - Deletes the alias and verifies it no longer resolves.
 - Avoid relying on external tools like `dig`/`nslookup`.
 - Ensure the scenario runs under `make e2e` and follows the E2E conventions.
@@ -37,15 +37,13 @@ Provide an end-to-end test for DNS alias functionality using the local docker-co
 - Go-based DNS query (no `dig`/`nslookup`): use `github.com/miekg/dns` to query `127.0.0.1:5353`.
 - Test flow:
   - Add alias via `POST /dns` (expects 303).
-  - Verify generated config contains `cname=<source>,<destination>`.
-  - Restart dnsmasq (it does not auto-reload `conf-dir`).
+  - Verify `aliases.json` contains the alias.
   - Resolve check:
-    - Query A for `<source>` and accept either a direct A or a CNAME to `<destination>` that resolves to A.
+    - Query A for `<source>` and expect an A answer with owner name matching `<source>`.
   - Delete alias via `POST /dns/{source}/delete` (expects 303).
-  - Verify generated config no longer contains the CNAME line.
-  - Restart dnsmasq again.
+  - Verify `aliases.json` no longer contains the alias.
   - Negative check:
-    - Query A for `<source>` with recursion disabled and assert dnsmasq no longer serves a local A/CNAME answer.
+    - Query A for `<source>` with recursion disabled and assert the DNS proxy does not return any address answers.
     - This intentionally avoids depending on upstream behavior (e.g. `SERVFAIL` vs `NXDOMAIN`).
 
 ## Plan & Checklist
@@ -54,9 +52,9 @@ Provide an end-to-end test for DNS alias functionality using the local docker-co
 - [x] Implement/adjust E2E test(s) for DNS alias add/delete + resolution
 - [x] Ensure cleanup is reliable (idempotent if rerun)
 - [x] Run `make e2e` locally and confirm green
-- [x] Add E2E scenario to reproduce CNAME->A resolution issue (sshd via ProxyJump)
+- [x] Add E2E scenario to reproduce ProxyJump resolution issue (sshd via ProxyJump)
 - [x] Update relevant design docs if conventions change
-- [ ] Move roadmap item to DONE when complete
+- [x] Move roadmap item to DONE when complete
 
 ## Progress
 
@@ -76,12 +74,17 @@ Provide an end-to-end test for DNS alias functionality using the local docker-co
   - Decided to track container glibc rebuild separately: see [task-20260103f-container-rebuild-glibc].
 
 - 2026-01-03T18:46:25Z
-  - Added an XFAIL E2E scenario to reproduce the CNAME->A issue via sshd + ProxyJump.
+  - Added an XFAIL E2E scenario to reproduce the ProxyJump resolution issue via sshd.
   - Script: `e2e/scripts/e2e-30-xfail-cname-a-proxyjump.sh`
-  - Note: this is intentionally excluded from `make e2e` because it is expected to fail until the glibc rebuild is completed.
+  - Note: this was excluded from `make e2e` while the issue was unresolved.
 
 - 2026-01-03T19:17:12Z
   - Documented E2E script naming conventions (`e2e-NN-xfail-*`, `e2e-NN-skip-*`) in [design-e2e-testing].
+
+- 2026-01-04T06:51:36Z
+  - Updated E2E docs and harness for the in-process DNS proxy (removed dnsmasq-specific checks).
+  - ProxyJump scenario is now stable; renamed and enabled under `make e2e`.
+  - Script: `e2e/scripts/e2e-30-proxyjump-dns-alias.sh`
 
 ## References
 

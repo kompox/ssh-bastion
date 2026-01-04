@@ -1,19 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# XFAIL E2E scenario: reproduce the CNAME->A resolution issue via sshd + ProxyJump.
+# E2E scenario: ProxyJump should not fail on DNS alias resolution.
 #
 # What this tests
-# - Create DNS alias: hoge.local -> github.com
-# - (Previously) restart dnsmasq (cache cold)
+# - Create a DNS alias: hoge.local -> github.com
 # - Attempt: ssh -J (via local sshd container) to git@hoge.local
 #
-# Expected current behavior (known issue)
-# - Fails with: "Name has no usable address" (sshd cannot use CNAME-only answer)
-#
-# Expected behavior after fix (e.g., glibc rebuild)
-# - Does NOT fail with that DNS error; connection proceeds to GitHub and typically
-#   fails later at authentication (e.g. "Permission denied (publickey)."), which is OK.
+# Expected behavior
+# - Must NOT fail with: "Name has no usable address"
+# - It may still fail later at authentication (e.g. "Permission denied (publickey)."), which is OK.
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
@@ -135,7 +131,7 @@ echo "[6/7] Sanity-check: SSH login to bastion…" >&2
 wait_for "ssh login to bastion succeeds" 30 ssh -4 -F "$ssh_config" bastion true
 
 # Repro: ProxyJump to the alias.
-echo "[7/7] Repro: ssh -J bastion git@hoge.local (expected to fail today)…" >&2
+echo "[7/7] ProxyJump: ssh -J bastion git@hoge.local (should not hit DNS error)…" >&2
 set +e
 out="$(ssh -4 -F "$ssh_config" target 2>&1)"
 rc=$?
@@ -143,7 +139,7 @@ set -e
 
 # This is the known failure mode we want to gate on.
 if echo "$out" | grep -Fq "Name has no usable address"; then
-  echo "XFAIL confirmed: DNS alias returned CNAME-only; sshd failed to connect: Name has no usable address" >&2
+  echo "ERROR: DNS resolution failed during ProxyJump: Name has no usable address" >&2
   echo "$out" >&2
   exit 1
 fi

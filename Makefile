@@ -78,6 +78,32 @@ e2e-down:
 e2e:
 	@# Run all numbered end-to-end scenarios.
 	@set -eu; \
+	if command -v ss >/dev/null 2>&1; then \
+		in_use=0; \
+		check_tcp() { \
+			p="$$1"; \
+			if ss -H -lnt | awk -v p=":$${p}$$" '$$4 ~ p {exit 0} END{exit 1}'; then \
+				echo "ERROR: TCP port $${p} is already in use (E2E requires localhost:$${p})." >&2; \
+				in_use=1; \
+			fi; \
+		}; \
+		check_udp() { \
+			p="$$1"; \
+			if ss -H -lnu | awk -v p=":$${p}$$" '$$4 ~ p {exit 0} END{exit 1}'; then \
+				echo "ERROR: UDP port $${p} is already in use (E2E requires 127.0.0.1:$${p}/udp)." >&2; \
+				in_use=1; \
+			fi; \
+		}; \
+		check_tcp 8080; \
+		check_tcp 2222; \
+		check_udp 5353; \
+		if [ "$$in_use" -ne 0 ]; then \
+			echo "Hint: stop any local dev servers (e.g. make run-test-mode) before running E2E." >&2; \
+			exit 1; \
+		fi; \
+	else \
+		echo "WARN: ss not found; skipping E2E port preflight check" >&2; \
+	fi; \
 	for f in $$(ls -1 ./e2e/scripts/e2e-[0-9][0-9]-*.sh | LC_ALL=C sort); do \
 		case "$$f" in \
 			*'-skip-'*.sh|*'-xfail-'*.sh|*'-known-fail-'*.sh|*'-quarantine-'*.sh) \

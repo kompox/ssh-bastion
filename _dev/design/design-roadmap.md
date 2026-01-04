@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-04T03:19:54Z
+updated: 2026-01-04T06:56:48Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -10,29 +10,6 @@ assistedBy: github/copilot (vscode) gpt-5.2
 This roadmap complements [design-overview]. Container-specific decisions are tracked in [design-containers].
 
 ## IN-PROGRES
-
-### DNS alias testing
-
-- E2E tests for DNS alias functionality using docker-compose setup
-- Add E2E test to verify CNAME to A resolution capability
-- Task: [task-20260103e-dns-alias-testing](../tasks/task-20260103e-dns-alias-testing.md)
-
-### Container: rebuild with glibc
-
-- Rebuild the container image using a glibc-based base image (e.g., `debian:stable-slim` or `ubuntu:latest`)
-- Ensure that sshd can resolve CNAME to A records correctly
-- Task: [task-20260103f-container-rebuild-glibc](../tasks/task-20260103f-container-rebuild-glibc.md)
-
-### DNS alias: query rewrite proxy
-
-- Run a minimal DNS forwarder inside ssh-bastion (in-process): listen on UDP :53
-- Rewrite only QNAME based on aliases configured in the web app (e.g. `hoge.local` -> `github.com`)
-- Forward the rewritten query to an upstream DNS server and return the response
-- Rewrite the owner name back to the original QNAME for `A`/`AAAA` records only
-- Eliminate the dnsmasq sidecar container in docker-compose
-- Eliminate the dnsmasq sidecar container in docker-compose
-- Expose service selection via `ssh-bastion serve` flags (web only, DNS only, or both)
-- Task: [task-20260104a-dns-query-rewrite-proxy](../tasks/task-20260104a-dns-query-rewrite-proxy.md)
 
 ## TODO
 
@@ -92,6 +69,22 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 
 ## DONE
 
+### DNS alias testing
+
+- E2E tests for DNS alias functionality using docker-compose setup
+- Add E2E test to verify aliases resolve to A/AAAA answers (no client-side CNAME chasing)
+- Task: [task-20260103e-dns-alias-testing](../tasks/task-20260103e-dns-alias-testing.md)
+
+### DNS alias: query rewrite proxy
+
+- Run a minimal DNS forwarder inside ssh-bastion (in-process): listen on UDP :53
+- Rewrite only QNAME based on aliases configured in the web app (e.g. `hoge.local` -> `github.com`)
+- Forward the rewritten query to an upstream DNS server and return the response
+- Rewrite the owner name back to the original QNAME for `A`/`AAAA` records only
+- Eliminate the dnsmasq sidecar container in docker-compose
+- Expose service selection via `ssh-bastion serve` flags (web only, DNS only, or both)
+- Task: [task-20260104a-dns-query-rewrite-proxy](../tasks/task-20260104a-dns-query-rewrite-proxy.md)
+
 ### Container development and local testing
 
 - Spec summary:
@@ -126,6 +119,14 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 - Add targeted tests if it’s practical; otherwise verify manually
 - Optionally document what operators should expect in logs
 - Task: [task-20260102d-webapp-observability](../tasks/task-20260102d-webapp-observability.md)
+
+## CANCELED
+
+### Container: rebuild with glibc
+
+- Rebuild the container image using a glibc-based base image (e.g., `debian:stable-slim` or `ubuntu:latest`)
+- Ensure that sshd can resolve CNAME to A records correctly
+- Task: [task-20260103f-container-rebuild-glibc](../tasks/task-20260103f-container-rebuild-glibc.md)
 
 ## References
 

@@ -1,8 +1,8 @@
 ---
 id: task-20260103f-container-rebuild-glibc
 title: Container rebuild with glibc (CNAME->A issue)
-status: in-progress
-updated: 2026-01-03T17:55:31Z
+status: canceled
+updated: 2026-01-04T06:59:00Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 
@@ -52,6 +52,9 @@ Working hypothesis:
 
 - 2026-01-03T17:55:31Z
   - Task created
+
+- 2026-01-04T06:59:00Z
+  - Canceled: the dnsmasq CNAME-chasing issue is no longer relevant after replacing dnsmasq with an in-process DNS query rewrite proxy.
 
 ## References
 

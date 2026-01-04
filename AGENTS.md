@@ -47,4 +47,4 @@ Each document begins with YAML front matter with the following fields:
   - in-progress: Work on the task has started.
   - done: Task is complete and verified.
   - blocked: Task cannot proceed due to external dependencies or issues.
-  - cancelled: Task has been abandoned and will not be completed.
+  - canceled: Task has been abandoned and will not be completed.
