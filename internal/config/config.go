@@ -18,6 +18,8 @@ type Config struct {
 	LogLevel       LogLevel
 	OverrideUserID string
 	OverrideEmail  string
+	RoleDefault    string
+	RoleAdminIDs   map[string]struct{}
 }
 
 type LogLevel int
@@ -78,7 +80,33 @@ func Load() (*Config, error) {
 	cfg.OverrideUserID = getEnv("SSHBASTION_AUTH_OVERRIDE_USER_ID", "")
 	cfg.OverrideEmail = getEnv("SSHBASTION_AUTH_OVERRIDE_EMAIL", "")
 
+	roleDefault := strings.ToLower(strings.TrimSpace(getEnv("SSHBASTION_ROLE_DEFAULT", "user")))
+	switch roleDefault {
+	case "user", "admin":
+		cfg.RoleDefault = roleDefault
+	default:
+		return nil, fmt.Errorf("invalid SSHBASTION_ROLE_DEFAULT: %q (must be user|admin)", roleDefault)
+	}
+
+	cfg.RoleAdminIDs = make(map[string]struct{})
+	for _, id := range splitCommaSeparated(getEnv("SSHBASTION_ROLE_ADMIN_IDS", "")) {
+		cfg.RoleAdminIDs[id] = struct{}{}
+	}
+
 	return cfg, nil
+}
+
+func splitCommaSeparated(value string) []string {
+	items := strings.Split(value, ",")
+	out := make([]string, 0, len(items))
+	for _, item := range items {
+		v := strings.TrimSpace(item)
+		if v == "" {
+			continue
+		}
+		out = append(out, v)
+	}
+	return out
 }
 
 func getEnv(key, defaultValue string) string {

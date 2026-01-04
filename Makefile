@@ -1,6 +1,14 @@
 .PHONY: help clean build test run-test-mode e2e-clean e2e-up e2e-down e2e
 .PHONY: git-diff-cached git-commit-with-editor git-show
 
+# run-test-mode variables (override at invocation time)
+# Example:
+#   make run-test-mode ID=test-user-123 EMAIL=developer@localhost ROLE=admin ADMINS=test-user-123,test-user-456
+ID ?= test-user-123
+EMAIL ?= developer@localhost
+ROLE ?= user
+ADMINS ?=
+
 help:
 	@echo "Targets:"; \
 	echo "  clean         Remove built binary and wipe ./_tmp/data (via helper container)"; \
@@ -45,13 +53,17 @@ run-test-mode: build
 	@echo "DNS:  udp://127.0.0.1:5353"
 	@echo "Try:  dig @127.0.0.1 -p 5353 example.com A +short"
 	@echo "Stop: Ctrl+C"
+	@echo "Identity: ID=$(ID) EMAIL=$(EMAIL)"
+	@echo "Roles:    ROLE=$(ROLE) ADMINS=$(ADMINS)"
 	@mkdir -p ./_tmp/data
 	@# DNS upstream is auto-detected by ssh-bastion when not set:
 	@# -dns-upstream flag > SSHBASTION_DNS_UPSTREAM env > /etc/resolv.conf (first nameserver)
 	@SSHBASTION_DATA_DIR="_tmp/data" \
 	SSHBASTION_AUTH_MODE="easy_auth" \
-	SSHBASTION_AUTH_OVERRIDE_USER_ID="test-user-123" \
-	SSHBASTION_AUTH_OVERRIDE_EMAIL="developer@localhost" \
+	SSHBASTION_AUTH_OVERRIDE_USER_ID="$(ID)" \
+	SSHBASTION_AUTH_OVERRIDE_EMAIL="$(EMAIL)" \
+	SSHBASTION_ROLE_DEFAULT="$(ROLE)" \
+	SSHBASTION_ROLE_ADMIN_IDS="$(ADMINS)" \
 	./ssh-bastion serve -http=true -dns=true -dns-addr ":5353"
 
 e2e-clean:

@@ -32,7 +32,7 @@
             <li><a href="/">Home</a></li>
             <li><a href="/ssh">SSH Keys</a></li>
             <li><a href="/dns">DNS Aliases</a></li>
-            {{if .Email}}<li><small>{{.Email}}</small></li>{{end}}
+            {{if .Email}}<li><small>{{.Email}}{{if .Role}} ({{.Role}}){{end}}</small></li>{{end}}
         </ul>
     </nav>
     <main class="container">

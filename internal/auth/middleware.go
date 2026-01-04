@@ -18,6 +18,7 @@ const (
 	userIDKey  contextKey = "userID"
 	emailKey   contextKey = "email"
 	userDirKey contextKey = "userDir"
+	roleKey    contextKey = "role"
 )
 
 type Middleware struct {
@@ -58,9 +59,17 @@ func (m *Middleware) Authenticate(next http.Handler) http.Handler {
 
 		userDirID := deriveUserDirID(userID)
 
+		role := "user"
+		if _, ok := m.cfg.RoleAdminIDs[userID]; ok {
+			role = "admin"
+		} else if override && m.cfg.RoleDefault == "admin" {
+			role = "admin"
+		}
+
 		ctx := context.WithValue(r.Context(), userIDKey, userID)
 		ctx = context.WithValue(ctx, emailKey, email)
 		ctx = context.WithValue(ctx, userDirKey, userDirID)
+		ctx = context.WithValue(ctx, roleKey, role)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -100,6 +109,13 @@ func GetEmail(r *http.Request) string {
 
 func GetUserDirID(r *http.Request) string {
 	if v := r.Context().Value(userDirKey); v != nil {
+		return v.(string)
+	}
+	return ""
+}
+
+func GetRole(r *http.Request) string {
+	if v := r.Context().Value(roleKey); v != nil {
 		return v.(string)
 	}
 	return ""

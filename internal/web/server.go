@@ -81,6 +81,7 @@ func Run(addr string) error {
 
 func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
 	email := auth.GetEmail(r)
+	role := auth.GetRole(r)
 	flashKind := ""
 	flashMsg := ""
 
@@ -118,6 +119,7 @@ func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
 	data := map[string]any{
 		"Title":        "Home",
 		"Email":        email,
+		"Role":         role,
 		"Page":         "home",
 		"FlashKind":    flashKind,
 		"FlashMessage": flashMsg,
@@ -138,9 +140,11 @@ func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleAdminPage(w http.ResponseWriter, r *http.Request) {
 	email := auth.GetEmail(r)
+	role := auth.GetRole(r)
 	data := map[string]any{
 		"Title": "Admin",
 		"Email": email,
+		"Role":  role,
 		"Page":  "admin",
 	}
 	if err := s.templates.ExecuteTemplate(w, "layout.html", data); err != nil {
@@ -162,6 +166,7 @@ func (s *Server) handleKeysPage(w http.ResponseWriter, r *http.Request) {
 func (s *Server) renderKeysPage(w http.ResponseWriter, r *http.Request, status int, formPublicKey, flashKind, flashMsg string) {
 	userDirID := auth.GetUserDirID(r)
 	email := auth.GetEmail(r)
+	role := auth.GetRole(r)
 	if flashKind == "" {
 		flashKind = "error"
 	}
@@ -190,6 +195,7 @@ func (s *Server) renderKeysPage(w http.ResponseWriter, r *http.Request, status i
 	data := map[string]interface{}{
 		"Title":         "SSH Keys",
 		"Email":         email,
+		"Role":          role,
 		"Keys":          keysList,
 		"Page":          "keys",
 		"FlashKind":     flashKind,
@@ -448,6 +454,7 @@ func (s *Server) handleDNSPage(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) renderDNSPage(w http.ResponseWriter, r *http.Request, status int, formSource, formDestination, flashKind, flashMsg string) {
 	email := auth.GetEmail(r)
+	role := auth.GetRole(r)
 	if flashKind == "" {
 		flashKind = "error"
 	}
@@ -475,6 +482,7 @@ func (s *Server) renderDNSPage(w http.ResponseWriter, r *http.Request, status in
 	data := map[string]interface{}{
 		"Title":           "DNS Aliases",
 		"Email":           email,
+		"Role":            role,
 		"Aliases":         aliases,
 		"Page":            "dns",
 		"FlashKind":       flashKind,

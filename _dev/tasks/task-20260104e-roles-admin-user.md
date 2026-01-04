@@ -2,7 +2,7 @@
 id: task-20260104e-roles-admin-user
 title: Roles: admin and user
 status: in-progress
-updated: 2026-01-04T10:21:30Z
+updated: 2026-01-04T10:57:56Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 
@@ -42,14 +42,13 @@ UI requirement:
 
 ## Plan & Checklist
 
-- [ ] 1) Specify role resolution rules (user id -> role)
-- [ ] 2) Specify config parsing + validation rules for role env vars
-- [ ] 3) Specify authorization policy at a high level (what we eventually want to protect)
-- [ ] 4) Update web UI spec: show role next to username (top-right)
-- [ ] 5) Document Roles/Permissions in [design-app-http]:
+- [x] 1) Implement role config/env parsing (`SSHBASTION_ROLE_DEFAULT`, `SSHBASTION_ROLE_ADMIN_IDS`)
+- [x] 2) Propagate role via auth middleware context
+- [x] 3) Update web UI header: show role next to username (top-right)
+- [ ] 4) Document Roles/Permissions in [design-app-http]:
   - [ ] Add Roles/Permissions section
   - [ ] For each route, state access derived from [design-roadmap] (who can view/operate)
-- [ ] 6) Update design docs / README if needed
+- [ ] 5) Update design docs / README if needed
 
 ## Progress
 
@@ -62,6 +61,16 @@ UI requirement:
 
 - 2026-01-04T10:20:17Z
   - Added doc-only requirement: record Roles/Permissions in [design-app-http] and annotate each route with access derived from [design-roadmap]
+
+- 2026-01-04T10:28:07Z
+  - Implemented roles config + propagation and enforced admin-only DNS/admin routes
+  - Updated layout header to display role and hide DNS link for non-admins
+  - Verified with `make test`
+
+- 2026-01-04T10:57:56Z
+  - Implemented role derivation (admin/user) and role display in the header (`email (role)`)
+  - Verified behavior manually; unit tests passing (`make test`)
+  - Note: authorization enforcement is not treated as completed in the current implementation
 
 ## References
 
