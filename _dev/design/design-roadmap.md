@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-04T08:35:40Z
+updated: 2026-01-04T09:30:07Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -10,11 +10,6 @@ assistedBy: github/copilot (vscode) gpt-5.2
 This roadmap complements [design-overview]. Container-specific decisions are tracked in [design-containers].
 
 ## IN-PROGRESS
-
-### Docs: design docs update
-
-- Eliminate mentions of dnsmasq sidecar in design docs
-- Task: [task-20260104c-design-docs-update](../tasks/task-20260104c-design-docs-update.md)
 
 ## TODO
 
@@ -46,15 +41,21 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
   - `ssh-bastion serve` (runs selected services in one process)
 - Optional debug helpers:
   - `ssh-bastion render authorized-keys`
-  - `ssh-bastion render dnsmasq-conf`
 - Define/implement reload behavior when generated files change:
-  - dnsmasq: SIGHUP or safe restart strategy
+  - DNS proxy: changes take effect without reload (reads alias registry at query time)
   - sshd: ensure it picks up updated `authorized_keys` reliably
+
+### DNS proxy: upstream selection
+
+- Implement upstream DNS selection logic so it works without explicit config:
+  - Prefer `SSHBASTION_DNS_UPSTREAM` when set
+  - Otherwise, auto-detect from `/etc/resolv.conf` (first `nameserver`, add `:53`)
+  - IPv6: support bracket form (e.g. `[fd00::1]:53`)
 
 ### Kubernetes manifests / Helm
 
 - Add initial manifests (or a Helm chart):
-  - Deployment: 1 Pod / 2 containers (sshd+web, dnsmasq)
+  - Deployment: 1 Pod / 2 containers (sshd + ssh-bastion)
   - Services: SSH (LoadBalancer) + web (cluster-internal)
   - PVC for `/data`
   - Health checks/readiness
@@ -73,6 +74,14 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
   - Minimal “how to run locally” notes (test mode + data dir)
 
 ## DONE
+
+### Docs: design docs update
+
+- Updated design docs to reflect the in-process DNS proxy (no DNS sidecar container)
+- Documented upstream DNS selection: `SSHBASTION_DNS_UPSTREAM` or `/etc/resolv.conf` autodetect
+- Updated remaining route references to `/ssh` and `/ssh/keys`
+- Added `design-app-dns.md` and renamed routes doc to `design-app-http.md`
+- Task: [task-20260104c-design-docs-update](../tasks/task-20260104c-design-docs-update.md)
 
 ### Web app: site map and routing update
 
@@ -96,7 +105,7 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 - Rewrite only QNAME based on aliases configured in the web app (e.g. `hoge.local` -> `github.com`)
 - Forward the rewritten query to an upstream DNS server and return the response
 - Rewrite the owner name back to the original QNAME for `A`/`AAAA` records only
-- Eliminate the dnsmasq sidecar container in docker-compose
+- Eliminate the sidecar DNS container in docker-compose
 - Expose service selection via `ssh-bastion serve` flags (web only, DNS only, or both)
 - Task: [task-20260104a-dns-query-rewrite-proxy](../tasks/task-20260104a-dns-query-rewrite-proxy.md)
 
@@ -147,8 +156,8 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 
 - [design-overview] - Design overview document
 - [design-containers] - Containers (image + runtime topology)
-- [design-webapp-routes] - Web App Routes & Sitemap
+- [design-app-http] - App HTTP (Routes & Sitemap)
 
 [design-overview]: ../design/design-overview.md
 [design-containers]: ../design/design-containers.md
-[design-webapp-routes]: ../design/design-webapp-routes.md
+[design-app-http]: ../design/design-app-http.md

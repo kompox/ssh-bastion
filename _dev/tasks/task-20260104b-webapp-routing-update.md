@@ -75,7 +75,7 @@ This task does not implement the Web UI editor yet, but it must define the stora
 ## Plan & Checklist
 
 - [x] 1) Update routing documentation
-  - [x] Update [design-webapp-routes] to reflect the new sitemap and paths
+  - [x] Update [design-app-http] to reflect the new sitemap and paths
 
 - [x] 2) Specify markdown storage under `/data`
   - [x] Adopt `${SSHBASTION_DATA_DIR}/content/pages/home.md` as the home source
@@ -110,7 +110,7 @@ This task does not implement the Web UI editor yet, but it must define the stora
   - Task created and moved to IN-PROGRESS in roadmap
 
 - 2026-01-04T07:25:01Z
-  - Added doc update step and reference for `design-webapp-routes`
+  - Added doc update step and reference for `design-app-http`
 
 - 2026-01-04T07:28:19Z
   - Reordered and renumbered checklist; added policy to move SSH key endpoints under `/ssh/*`
@@ -138,7 +138,7 @@ This task does not implement the Web UI editor yet, but it must define the stora
 ## References
 
 - [design-roadmap] - Development roadmap
-- [design-webapp-routes] - Web App Routes & Sitemap
+- [design-app-http] - App HTTP (Routes & Sitemap)
 
 [design-roadmap]: ../design/design-roadmap.md
-[design-webapp-routes]: ../design/design-webapp-routes.md
+[design-app-http]: ../design/design-app-http.md

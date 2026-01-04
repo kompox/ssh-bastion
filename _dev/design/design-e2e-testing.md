@@ -2,7 +2,7 @@
 id: design-e2e-testing
 title: E2E / integration testing (docker-compose + published ports)
 status: draft
-updated: 2026-01-04T06:44:14Z
+updated: 2026-01-04T09:09:31Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: E2E / integration testing (docker-compose)
@@ -126,8 +126,8 @@ Where `<data-dir>` is the host directory bind-mounted to `/data` (typically `./_
 
 - [design-overview] - Design overview document
 - [design-containers] - Containers (image + runtime topology)
-- [design-webapp-routes] - Web app routes & sitemap
+- [design-app-http] - App HTTP (Routes & Sitemap)
 
 [design-overview]: ../design/design-overview.md
 [design-containers]: ../design/design-containers.md
-[design-webapp-routes]: ../design/design-webapp-routes.md
+[design-app-http]: ../design/design-app-http.md

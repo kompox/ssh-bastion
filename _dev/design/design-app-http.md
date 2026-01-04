@@ -1,10 +1,11 @@
 ---
-id: design-webapp-routes
-title: Web App Routes & Sitemap
+id: design-app-http
+title: App HTTP (Routes & Sitemap)
 status: stable
-updated: 2026-01-04T08:10:37Z
+updated: 2026-01-04T09:09:31Z
+assistedBy: github/copilot (vscode) gpt-5.2
 ---
-# Web App Routes & Sitemap
+# App HTTP (Routes & Sitemap)
 
 ## Purpose
 

@@ -75,7 +75,7 @@ Remove “plain error text page” responses from user-facing flows and present 
 ## References
 
 - [design-overview] - Design overview document
-- [design-webapp-routes] - Web app routes & sitemap
+- [design-app-http] - App HTTP (Routes & Sitemap)
 
 [design-overview]: ../design/design-overview.md
-[design-webapp-routes]: ../design/design-webapp-routes.md
+[design-app-http]: ../design/design-app-http.md

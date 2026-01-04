@@ -2,7 +2,8 @@
 id: design-app-testing
 title: App Testing (HTTP + DNS)
 status: stable
-updated: 2026-01-04T04:36:00Z
+updated: 2026-01-04T09:24:31Z
+assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # App Testing (HTTP + DNS)
 
@@ -62,6 +63,8 @@ It starts `ssh-bastion serve` with:
 - Data directory: `_tmp/data`
 - Auth: test-mode identity override (no auth proxy required)
 
+Note: `make run-test-mode` sets `SSHBASTION_DNS_UPSTREAM` based on the first `nameserver` entry in `/etc/resolv.conf`.
+
 Stop with `Ctrl+C`.
 
 ### Expected on-disk outputs
@@ -70,6 +73,9 @@ After using the app, `_tmp/data/` is expected to contain:
 
 ```
 _tmp/data/
+├── content/
+│   └── pages/
+│       └── home.md
 ├── users/
 │   └── <user-uuid>/
 │       └── keys/
@@ -85,7 +91,9 @@ Notes:
 
 - `authorized_keys/jump` contains all enabled SSH public keys.
 - `dns/aliases.json` contains configured DNS aliases.
-- The app no longer generates dnsmasq config files.
+- DNS behavior is implemented by an in-process DNS proxy that reads `dns/aliases.json`.
+- `content/pages/home.md` is optional input content for `GET /`.
+    - If the file is missing, the Home page renders a minimal placeholder.
 
 ## Manual HTTP Server Testing
 
@@ -94,15 +102,15 @@ These checks assume the server is running via `make run-test-mode`.
 ### Browser testing (override mode)
 
 1. Open `http://localhost:8080/`.
-2. Verify the SSH Keys page loads.
-3. Add/enable/disable/delete keys.
+2. Verify the Home page loads.
+3. Navigate to `/ssh` and add/enable/disable/delete keys.
 4. Navigate to the DNS Aliases page and add/delete aliases.
 
 ### Error UX regression checks (task-20260102b)
 
 Goal: confirm user-facing failures do not render a plain error text page.
 
-1. Keys form error: submit an invalid public key on `/` and confirm:
+1. Keys form error: submit an invalid public key on `/ssh` and confirm:
     - The page is re-rendered with the normal layout.
     - An inline error is shown.
     - The text area preserves the submitted value.
@@ -118,9 +126,11 @@ In test mode, you can still hit endpoints directly:
 ```bash
 curl http://localhost:8080/
 
+curl http://localhost:8080/ssh
+
 curl -X POST \
     -d "publicKey=ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl test@example.com" \
-    http://localhost:8080/keys
+    http://localhost:8080/ssh/keys
 
 curl http://localhost:8080/dns
 
@@ -187,13 +197,14 @@ Expected: no `A` answer is returned.
 | `SSHBASTION_AUTH_EMAIL_HEADER` | `X-MS-CLIENT-PRINCIPAL-NAME` | `X-Auth-Request-Email` | Header containing email |
 | `SSHBASTION_AUTH_OVERRIDE_USER_ID` | (empty) | (empty) | TEST MODE: override user ID (ignores headers) |
 | `SSHBASTION_AUTH_OVERRIDE_EMAIL` | (empty) | (empty) | TEST MODE: override email (ignores headers) |
+| `SSHBASTION_DNS_UPSTREAM` | (optional; from `/etc/resolv.conf`) | (optional; from `/etc/resolv.conf`) | DNS proxy upstream resolver (e.g. `127.0.0.11:53` in Docker) |
 
 ## References
 
 - [design-overview] - Design overview document
 - [design-containers] - Containers (image + runtime topology)
-- [design-webapp-routes] - Web app routes & sitemap
+- [design-app-http] - App HTTP (Routes & Sitemap)
 
 [design-overview]: ../design/design-overview.md
 [design-containers]: ../design/design-containers.md
-[design-webapp-routes]: ../design/design-webapp-routes.md
+[design-app-http]: ../design/design-app-http.md
