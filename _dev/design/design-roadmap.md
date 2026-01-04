@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-04T13:03:47Z
+updated: 2026-01-04T21:26:40Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -37,14 +37,14 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 - Decide whether to restrict forwarding targets via `PermitOpen` (and configuration approach)
 - Decide and document mitigation for `known_hosts` collisions when the same FQDN is reachable externally
 
+## DONE
+
 ### Docs: README.md
 
-- Update `README.md`:
-  - Brief project overview and goals
-  - Quick links to key design docs and task files
-  - Minimal “how to run locally” notes (test mode + data dir)
-
-## DONE
+- Updated `README.md` as the primary entry point (Features, multi-site example, and Developer's guide links)
+- Highlighted shared public IP / LoadBalancer rule benefit (single SSH entrypoint)
+- Updated the Gitea Kubernetes example and Mermaid diagram for the gitea1/2/3 multi-site use case
+- Task: [task-20260104h-docs-readme](../tasks/task-20260104h-docs-readme.md)
 
 ### Admin: Home page markdown editing
 

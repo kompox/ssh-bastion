@@ -2,7 +2,7 @@
 id: design-app-testing
 title: App Testing (HTTP + DNS)
 status: stable
-updated: 2026-01-04T09:24:31Z
+updated: 2026-01-04T19:04:10Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # App Testing (HTTP + DNS)
@@ -50,50 +50,37 @@ make test
 
 ## Run Server for Manual Testing
 
-Use a single local startup method:
+Use `make run-test-mode` to run HTTP + DNS locally with a test identity (no auth proxy required):
 
 ```bash
 make run-test-mode
 ```
 
-It starts `ssh-bastion serve` with:
+It starts `./ssh-bastion serve` with:
 
-- HTTP: `http://localhost:8080`
-- DNS: UDP `127.0.0.1:5353`
+- Services listening on the following `addr:port/proto`:
+  - HTTP: `:8080/tcp` (Open in browser at `http://localhost:8080/`)
+  - DNS: `:5353/udp` (Query via `dig @localhost -p 5353 example.com A +short`)
+- DNS upstream: auto-detected from `/etc/resolv.conf`
+  - `SSHBASTION_DNS_UPSTREAM=$(DNS_UPSTREAM)` (default: empty)
 - Data directory: `_tmp/data`
-- Auth: test-mode identity override (no auth proxy required)
+  - `SSHBASTION_DATA_DIR=$(DATA_DIR)` (default: `_tmp/data`)
+  - Expected on-disk outputs: see [design-overview] (Storage layout section).
+- Auth and roles are set via Makefile variables:
+  - `SSHBASTION_AUTH_OVERRIDE_USER_ID=$(ID)` (default: `test-user-123`)
+  - `SSHBASTION_AUTH_OVERRIDE_EMAIL=$(EMAIL)` (default: `developer@localhost`)
+  - `SSHBASTION_ROLE_DEFAULT=$(ROLE)` (default: `user`)
+  - `SSHBASTION_ROLE_ADMIN_IDS=$(ADMINS)` (default: empty)
 
-Note: `make run-test-mode` sets `SSHBASTION_DNS_UPSTREAM` based on the first `nameserver` entry in `/etc/resolv.conf`.
+You can override Makefile variables on invocation like this:
 
-Stop with `Ctrl+C`.
-
-### Expected on-disk outputs
-
-After using the app, `_tmp/data/` is expected to contain:
-
-```
-_tmp/data/
-├── content/
-│   └── pages/
-│       └── home.md
-├── users/
-│   └── <user-uuid>/
-│       └── keys/
-│           ├── <fingerprint>.json
-│           └── <fingerprint>.pub
-├── authorized_keys/
-│   └── jump
-└── dns/
-    └── aliases.json
+```bash
+make run-test-mode ID=test-user-123 EMAIL=developer@localhost ADMINS=test-user-123,test-user-456
+make run-test-mode ROLE=admin
+make run-test-mode DATA_DIR=_tmp/data DNS_UPSTREAM=127.0.0.11:53
 ```
 
-Notes:
-
-- `authorized_keys/jump` contains all enabled SSH public keys.
-- `dns/aliases.json` contains configured DNS aliases.
-- DNS behavior is implemented by an in-process DNS proxy that reads `dns/aliases.json`.
-- `content/pages/home.md` is optional input content for `GET /`.
-    - If the file is missing, the Home page renders a minimal placeholder.
+Stop the server with `Ctrl+C`.
 
 ## Manual HTTP Server Testing
 
@@ -104,7 +91,14 @@ These checks assume the server is running via `make run-test-mode`.
 1. Open `http://localhost:8080/`.
 2. Verify the Home page loads.
 3. Navigate to `/ssh` and add/enable/disable/delete keys.
-4. Navigate to the DNS Aliases page and add/delete aliases.
+4. (Admin only) Navigate to `/admin/dns` and add/delete aliases.
+5. (Admin only) Navigate to `/admin/home` and edit/save the home page markdown.
+
+To test admin-only pages in test mode, start the server with an admin role, e.g.:
+
+```bash
+make run-test-mode ROLE=admin
+```
 
 ### Error UX regression checks (task-20260102b)
 
@@ -114,7 +108,7 @@ Goal: confirm user-facing failures do not render a plain error text page.
     - The page is re-rendered with the normal layout.
     - An inline error is shown.
     - The text area preserves the submitted value.
-2. DNS form error: submit a duplicate `source` on `/dns` and confirm:
+2. DNS form error (admin only): submit a duplicate `source` on `/admin/dns` and confirm:
     - The page is re-rendered with the normal layout.
     - An inline error is shown.
     - Inputs preserve the submitted values.
@@ -132,11 +126,11 @@ curl -X POST \
     -d "publicKey=ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl test@example.com" \
     http://localhost:8080/ssh/keys
 
-curl http://localhost:8080/dns
+curl http://localhost:8080/admin/dns
 
 curl -X POST \
     -d "source=gitea.example.com&destination=gitea.gitea.svc.cluster.local" \
-    http://localhost:8080/dns
+    http://localhost:8080/admin/dns
 ```
 
 ### Auth failure behavior (when not in test mode)
@@ -154,7 +148,7 @@ These checks assume the DNS server is running via `make run-test-mode`.
 
 ### Create an alias (via web UI)
 
-1. Open `http://localhost:8080/dns`.
+1. (Admin only) Open `http://localhost:8080/admin/dns`.
 2. Add `source`: `hoge.local`.
 3. Add `destination`: `example.com`.
 
@@ -178,7 +172,7 @@ Expected: the answer owner name should be `hoge.local.` (not `example.com.`).
 
 ### Delete alias and verify it stops resolving
 
-1. Delete the `hoge.local` alias from `http://localhost:8080/dns`.
+1. Delete the `hoge.local` alias from `http://localhost:8080/admin/dns`.
 2. Query again:
 
 ```bash
@@ -197,6 +191,8 @@ Expected: no `A` answer is returned.
 | `SSHBASTION_AUTH_EMAIL_HEADER` | `X-MS-CLIENT-PRINCIPAL-NAME` | `X-Auth-Request-Email` | Header containing email |
 | `SSHBASTION_AUTH_OVERRIDE_USER_ID` | (empty) | (empty) | TEST MODE: override user ID (ignores headers) |
 | `SSHBASTION_AUTH_OVERRIDE_EMAIL` | (empty) | (empty) | TEST MODE: override email (ignores headers) |
+| `SSHBASTION_ROLE_DEFAULT` | `user` | `user` | Default role (set to `admin` to access `/admin/*`) |
+| `SSHBASTION_ROLE_ADMIN_IDS` | (empty) | (empty) | Comma-separated admin user IDs (alternative to `SSHBASTION_ROLE_DEFAULT=admin`) |
 | `SSHBASTION_DNS_UPSTREAM` | (optional; from `/etc/resolv.conf`) | (optional; from `/etc/resolv.conf`) | DNS proxy upstream resolver (e.g. `127.0.0.11:53` in Docker) |
 
 ## References

@@ -4,10 +4,13 @@
 # run-test-mode variables (override at invocation time)
 # Example:
 #   make run-test-mode ID=test-user-123 EMAIL=developer@localhost ROLE=admin ADMINS=test-user-123,test-user-456
+#   make run-test-mode DATA_DIR=_tmp/data DNS_UPSTREAM=127.0.0.11:53
 ID ?= test-user-123
 EMAIL ?= developer@localhost
 ROLE ?= user
 ADMINS ?=
+DATA_DIR ?= _tmp/data
+DNS_UPSTREAM ?=
 
 help:
 	@echo "Targets:"; \
@@ -49,16 +52,16 @@ test:
 run-test-mode: build
 	@# Run HTTP + DNS locally with override identity (no auth proxy required).
 	@echo "Starting ssh-bastion (test mode)"
-	@echo "Open: http://localhost:8080/"
-	@echo "DNS:  udp://127.0.0.1:5353"
-	@echo "Try:  dig @127.0.0.1 -p 5353 example.com A +short"
-	@echo "Stop: Ctrl+C"
-	@echo "Identity: ID=$(ID) EMAIL=$(EMAIL)"
-	@echo "Roles:    ROLE=$(ROLE) ADMINS=$(ADMINS)"
-	@mkdir -p ./_tmp/data
-	@# DNS upstream is auto-detected by ssh-bastion when not set:
-	@# -dns-upstream flag > SSHBASTION_DNS_UPSTREAM env > /etc/resolv.conf (first nameserver)
-	@SSHBASTION_DATA_DIR="_tmp/data" \
+	@echo "  HTTP:     :8080/tcp (Open in browser at http://localhost:8080/)"
+	@echo "  DNS:      :5353/udp (Query via dig @localhost -p 5353 example.com A +short)"
+	@echo "  Identity: ID=$(ID) EMAIL=$(EMAIL)"
+	@echo "  Roles:    ROLE=$(ROLE) ADMINS=$(ADMINS)"
+	@echo "  Data:     DATA_DIR=$(DATA_DIR)"
+	@echo "  DNS:      DNS_UPSTREAM=$(DNS_UPSTREAM)"
+	@echo "Type Ctrl-C to stop."
+	@mkdir -p "$(DATA_DIR)"
+	@SSHBASTION_DATA_DIR="$(DATA_DIR)" \
+	SSHBASTION_DNS_UPSTREAM="$(DNS_UPSTREAM)" \
 	SSHBASTION_AUTH_MODE="easy_auth" \
 	SSHBASTION_AUTH_OVERRIDE_USER_ID="$(ID)" \
 	SSHBASTION_AUTH_OVERRIDE_EMAIL="$(EMAIL)" \
