@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-04T08:25:30Z
+updated: 2026-01-04T08:35:40Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -11,11 +11,12 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 
 ## IN-PROGRESS
 
-## TODO
-
 ### Docs: design docs update
 
 - Eliminate mentions of dnsmasq sidecar in design docs
+- Task: [task-20260104c-design-docs-update](../tasks/task-20260104c-design-docs-update.md)
+
+## TODO
 
 ### Roles: admin and user
 
