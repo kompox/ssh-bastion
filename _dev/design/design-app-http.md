@@ -2,7 +2,7 @@
 id: design-app-http
 title: App HTTP (Routes & Sitemap)
 status: stable
-updated: 2026-01-04T11:51:33Z
+updated: 2026-01-04T12:30:22Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # App HTTP (Routes & Sitemap)
@@ -64,8 +64,9 @@ Admin pages (HTMX HTML pages; no compatibility routes):
   - List derived from current key owners
   - Display both `email` (primary) and `userID`
 - `GET /admin/keys`
-  - `200 OK`: SSH keys admin page (all users)
+  - `200 OK`: SSH keys admin page (all users’ keys)
   - Access: `admin` only
+  - UI: columns `Owner`, `Fingerprint`, `Status`, `Created`
 - `GET /admin/dns`
   - `200 OK`: DNS aliases admin page
   - Access: `admin` only

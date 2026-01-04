@@ -1,0 +1,35 @@
+{{define "admin_users_content"}}
+<h1>Admin Users</h1>
+
+<p>Current key owners.</p>
+
+{{if .FlashMessage}}
+<article role="alert" class="flash flash-{{.FlashKind}}">
+    <p>{{.FlashMessage}}</p>
+</article>
+{{end}}
+
+{{if .Users}}
+<table>
+    <thead>
+        <tr>
+            <th>User ID</th>
+            <th>Email</th>
+            <th>Keys</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Users}}
+        <tr>
+            <td><code>{{.UserID}}</code></td>
+            <td><code>{{.Email}}</code></td>
+            <td>{{.KeyCount}}</td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+{{else}}
+<p>No users with keys.</p>
+{{end}}
+
+{{end}}

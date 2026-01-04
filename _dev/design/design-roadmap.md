@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-04T11:51:33Z
+updated: 2026-01-04T12:30:22Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -10,27 +10,6 @@ assistedBy: github/copilot (vscode) gpt-5.2
 This roadmap complements [design-overview]. Container-specific decisions are tracked in [design-containers].
 
 ## IN-PROGRESS
-
-### Permissions: SSH keys, DNS, admin
-
-- Define and enforce route-level permissions for the web app.
-- Spec reference: [design-app-http]
-- Task: [task-20260104f-permissions-enforcement](../tasks/task-20260104f-permissions-enforcement.md)
-
-Admin endpoints (initial scope):
-
-- `GET /admin` dashboard
-- `GET /admin/users` (list current key owners; no POST)
-- `GET /admin/keys` (all users overview; no POST)
-- `GET /admin/dns` + `POST /admin/dns/*` (migrated from `/dns/*`)
-- `/dns` is removed (no redirect)
-- Pagination/search: out of scope (separate tasks)
-
-|Area|`admin`|`user`|
-|-|-|-|
-|SSH public keys (`/ssh/keys`)|Manage all users’ SSH public keys|Manage own SSH public keys only|
-|DNS alias rules (`/admin/dns`)|Manage DNS alias rules|No access (cannot view or change)|
-|Admin dashboard (`/admin`)|Manage the home page content etc.|No access|
 
 ## TODO
 
@@ -70,6 +49,27 @@ Admin endpoints (initial scope):
   - Minimal “how to run locally” notes (test mode + data dir)
 
 ## DONE
+
+### Permissions: SSH keys, DNS, admin
+
+- Define and enforce route-level permissions for the web app.
+- Spec reference: [design-app-http]
+- Task: [task-20260104f-permissions-enforcement](../tasks/task-20260104f-permissions-enforcement.md)
+
+Admin endpoints (initial scope):
+
+- `GET /admin` dashboard
+- `GET /admin/users` (list current key owners; no POST)
+- `GET /admin/keys` (all users’ keys list; no POST)
+- `GET /admin/dns` + `POST /admin/dns/*` (migrated from `/dns/*`)
+- `/dns` is removed (no redirect)
+- Pagination/search: out of scope (separate tasks)
+
+|Area|`admin`|`user`|
+|-|-|-|
+|SSH public keys (`/ssh/keys`)|Manage all users’ SSH public keys|Manage own SSH public keys only|
+|DNS alias rules (`/admin/dns`)|Manage DNS alias rules|No access (cannot view or change)|
+|Admin dashboard (`/admin`)|Manage the home page content etc.|No access|
 
 ### Roles: admin and user
 

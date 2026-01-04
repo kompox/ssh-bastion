@@ -1,0 +1,37 @@
+{{define "admin_keys_content"}}
+<h1>Admin Keys</h1>
+
+<p>All SSH public keys.</p>
+
+{{if .FlashMessage}}
+<article role="alert" class="flash flash-{{.FlashKind}}">
+    <p>{{.FlashMessage}}</p>
+</article>
+{{end}}
+
+{{if .Keys}}
+<table>
+    <thead>
+        <tr>
+            <th>Owner</th>
+            <th>Fingerprint</th>
+            <th>Status</th>
+            <th>Created</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Keys}}
+        <tr>
+            <td><code>{{.OwnerEmail}}</code></td>
+            <td><code>{{.Fingerprint}}</code></td>
+            <td>{{.Status}}</td>
+            <td><code>{{.CreatedAt}}</code></td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+{{else}}
+<p>No keys.</p>
+{{end}}
+
+{{end}}

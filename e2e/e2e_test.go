@@ -37,15 +37,15 @@ func TestE2E_AliasIsPersisted(t *testing.T) {
 	form.Set("source", source)
 	form.Set("destination", destination)
 
-	resp, err := client.PostForm(httpBase+"/dns", form)
+	resp, err := client.PostForm(httpBase+"/admin/dns", form)
 	if err != nil {
-		t.Fatalf("POST /dns failed: %v", err)
+		t.Fatalf("POST /admin/dns failed: %v", err)
 	}
 	defer resp.Body.Close()
 	_, _ = io.ReadAll(resp.Body)
 
 	if resp.StatusCode != http.StatusSeeOther {
-		t.Fatalf("expected POST /dns to return 303, got %d", resp.StatusCode)
+		t.Fatalf("expected POST /admin/dns to return 303, got %d", resp.StatusCode)
 	}
 
 	aliasesJSON := filepath.Join(dataDir, "dns", "aliases.json")
@@ -113,10 +113,10 @@ func TestE2E_DeleteDnsAlias(t *testing.T) {
 	}
 
 	// Delete the alias via the web API.
-	deleteURL := fmt.Sprintf("%s/dns/%s/delete", httpBase, url.PathEscape(source))
+	deleteURL := fmt.Sprintf("%s/admin/dns/%s/delete", httpBase, url.PathEscape(source))
 	resp, err := client.Post(deleteURL, "application/x-www-form-urlencoded", nil)
 	if err != nil {
-		t.Fatalf("POST /dns/{source}/delete failed: %v", err)
+		t.Fatalf("POST /admin/dns/{source}/delete failed: %v", err)
 	}
 	defer resp.Body.Close()
 	_, _ = io.ReadAll(resp.Body)

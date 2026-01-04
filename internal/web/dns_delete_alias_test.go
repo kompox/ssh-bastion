@@ -32,13 +32,13 @@ func TestDeleteAlias_MissingAlias_RendersPageWithError(t *testing.T) {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /dns/{source}/delete", srv.handleDeleteAlias)
+	mux.HandleFunc("POST /admin/dns/{source}/delete", srv.handleDeleteAlias)
 
 	cfg := &config.Config{OverrideUserID: "test-user", OverrideEmail: "test@example.com", UserIDHeader: "X", EmailHeader: "Y"}
 	authMw := auth.NewMiddleware(cfg)
 	handler := authMw.Authenticate(mux)
 
-	req := httptest.NewRequest("POST", "/dns/nonexists.example.com/delete", nil)
+	req := httptest.NewRequest("POST", "/admin/dns/nonexists.example.com/delete", nil)
 	res := httptest.NewRecorder()
 
 	handler.ServeHTTP(res, req)
@@ -82,13 +82,13 @@ func TestDeleteAlias_SourceWithEscapedChars_DeletesAndRedirects(t *testing.T) {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /dns/{source}/delete", srv.handleDeleteAlias)
+	mux.HandleFunc("POST /admin/dns/{source}/delete", srv.handleDeleteAlias)
 
 	cfg := &config.Config{OverrideUserID: "test-user", OverrideEmail: "test@example.com", UserIDHeader: "X", EmailHeader: "Y"}
 	authMw := auth.NewMiddleware(cfg)
 	handler := authMw.Authenticate(mux)
 
-	req := httptest.NewRequest("POST", "http://example.com/dns/foo%2Dbar.example.com/delete", nil)
+	req := httptest.NewRequest("POST", "http://example.com/admin/dns/foo%2Dbar.example.com/delete", nil)
 	res := httptest.NewRecorder()
 
 	handler.ServeHTTP(res, req)
@@ -96,8 +96,8 @@ func TestDeleteAlias_SourceWithEscapedChars_DeletesAndRedirects(t *testing.T) {
 	if res.Code != http.StatusSeeOther {
 		t.Fatalf("expected 303; got %d", res.Code)
 	}
-	if loc := res.Header().Get("Location"); loc != "/dns" {
-		t.Fatalf("expected redirect to /dns; got %q", loc)
+	if loc := res.Header().Get("Location"); loc != "/admin/dns" {
+		t.Fatalf("expected redirect to /admin/dns; got %q", loc)
 	}
 
 	aliases, err := dnsRegistry.ListAliases()

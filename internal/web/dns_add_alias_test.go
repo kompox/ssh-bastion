@@ -37,7 +37,7 @@ func TestAddAlias_DuplicateSource_RendersPageWithError(t *testing.T) {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /dns", srv.handleAddAlias)
+	mux.HandleFunc("POST /admin/dns", srv.handleAddAlias)
 
 	cfg := &config.Config{OverrideUserID: "test-user", OverrideEmail: "test@example.com", UserIDHeader: "X", EmailHeader: "Y"}
 	authMw := auth.NewMiddleware(cfg)
@@ -47,7 +47,7 @@ func TestAddAlias_DuplicateSource_RendersPageWithError(t *testing.T) {
 	form.Set("source", "gitea.example.com")
 	form.Set("destination", "other.example.com")
 
-	req := httptest.NewRequest("POST", "/dns", strings.NewReader(form.Encode()))
+	req := httptest.NewRequest("POST", "/admin/dns", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	res := httptest.NewRecorder()
 
@@ -92,7 +92,7 @@ func TestAddAlias_InvalidDNS1123_RendersPageWithError(t *testing.T) {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /dns", srv.handleAddAlias)
+	mux.HandleFunc("POST /admin/dns", srv.handleAddAlias)
 
 	cfg := &config.Config{OverrideUserID: "test-user", OverrideEmail: "test@example.com", UserIDHeader: "X", EmailHeader: "Y"}
 	authMw := auth.NewMiddleware(cfg)
@@ -102,7 +102,7 @@ func TestAddAlias_InvalidDNS1123_RendersPageWithError(t *testing.T) {
 	form.Set("source", "Bad_Name.example.com")
 	form.Set("destination", "dest.example.com")
 
-	req := httptest.NewRequest("POST", "/dns", strings.NewReader(form.Encode()))
+	req := httptest.NewRequest("POST", "/admin/dns", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	res := httptest.NewRecorder()
 

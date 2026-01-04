@@ -31,17 +31,21 @@
         <ul>
             <li><a href="/">Home</a></li>
             <li><a href="/ssh">SSH Keys</a></li>
-            <li><a href="/dns">DNS Aliases</a></li>
+            {{if eq .Role "admin"}}<li><a href="/admin">Admin</a></li>{{end}}
             {{if .Email}}<li><small>{{.Email}}{{if .Role}} ({{.Role}}){{end}}</small></li>{{end}}
         </ul>
     </nav>
     <main class="container">
         {{if eq .Page "home"}}
             {{template "home_content" .}}
-        {{else if eq .Page "dns"}}
-            {{template "dns_content" .}}
         {{else if eq .Page "admin"}}
             {{template "admin_content" .}}
+        {{else if eq .Page "admin_users"}}
+            {{template "admin_users_content" .}}
+        {{else if eq .Page "admin_keys"}}
+            {{template "admin_keys_content" .}}
+        {{else if eq .Page "admin_dns"}}
+            {{template "admin_dns_content" .}}
         {{else}}
             {{template "keys_content" .}}
         {{end}}

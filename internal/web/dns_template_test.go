@@ -22,7 +22,7 @@ func TestDnsTemplate_URLencodesSourceInDeleteAction(t *testing.T) {
 	data := map[string]any{
 		"Title":   "DNS Aliases",
 		"Email":   "test@example.com",
-		"Page":    "dns",
+		"Page":    "admin_dns",
 		"Aliases": []dns.Alias{{Source: source, Destination: "dest.example.com"}},
 	}
 
@@ -32,7 +32,7 @@ func TestDnsTemplate_URLencodesSourceInDeleteAction(t *testing.T) {
 	}
 
 	html := buf.String()
-	if !bytes.Contains([]byte(html), []byte("/dns/foo-bar.example.com/delete")) {
+	if !bytes.Contains([]byte(html), []byte("/admin/dns/foo-bar.example.com/delete")) {
 		t.Fatalf("expected delete action to include source; got HTML: %s", html)
 	}
 }

@@ -1,9 +1,9 @@
-{{define "dns_content"}}
+{{define "admin_dns_content"}}
 <h1>DNS Aliases</h1>
 
 <article>
     <header><strong>Add New Alias</strong></header>
-    <form method="POST" action="/dns">
+    <form method="POST" action="/admin/dns">
         <label>
             Source FQDN
             <input type="text" name="source" placeholder="gitea.example.com" value="{{.FormSource}}" required>
@@ -38,7 +38,7 @@
             <td><code>{{.Source}}</code></td>
             <td><code>{{.Destination}}</code></td>
             <td>
-                <form method="POST" action="/dns/{{.Source | urlquery}}/delete" style="display:inline">
+                <form method="POST" action="/admin/dns/{{.Source | urlquery}}/delete" style="display:inline">
                     <button type="submit" class="contrast">Delete</button>
                 </form>
             </td>

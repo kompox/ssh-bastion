@@ -96,9 +96,9 @@ expected_line="$(cat "$pub_key")"
 wait_for "authorized_keys contains newly added key" 30 grep -Fxq "$expected_line" "${host_data_dir}/authorized_keys/jump"
 
 echo "[5/7] Creating DNS alias: hoge.local -> github.com …" >&2
-status="$(curl -sS -o /dev/null -w "%{http_code}" -X POST --data-urlencode "source=hoge.local" --data-urlencode "destination=github.com" http://localhost:8080/dns)"
+status="$(curl -sS -o /dev/null -w "%{http_code}" -X POST --data-urlencode "source=hoge.local" --data-urlencode "destination=github.com" http://localhost:8080/admin/dns)"
 if [ "$status" != "303" ]; then
-  echo "ERROR: expected POST /dns to return 303, got ${status}" >&2
+  echo "ERROR: expected POST /admin/dns to return 303, got ${status}" >&2
   exit 1
 fi
 

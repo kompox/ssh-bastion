@@ -1,8 +1,8 @@
 ---
 id: task-20260104f-permissions-enforcement
 title: Permissions: SSH keys, DNS, admin
-status: todo
-updated: 2026-01-04T11:48:20Z
+status: done
+updated: 2026-01-04T12:30:22Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 
@@ -38,7 +38,8 @@ Implementation scope (agreed for 20260104f):
   - User list definition: derive from current key owners (if a user deletes all keys, they disappear from the list; enable/disable alone does not remove them)
   - No `POST` in this scope
 - `GET /admin/keys`
-  - Show all users (overview)
+  - Show all users’ keys (key list)
+  - UI: columns `Owner`, `Fingerprint`, `Status`, `Created`
   - No `POST` in this scope
 - `GET /admin/dns`
   - Migrate from `/dns`
@@ -62,16 +63,16 @@ Routing compatibility:
 
 ## Plan & Checklist
 
-- [ ] 1) Update [design-app-http] to reflect per-route access rules
-- [ ] 2) Add admin pages and routing:
-  - [ ] `GET /admin`
-  - [ ] `GET /admin/users` (GET only)
-  - [ ] `GET /admin/keys` (GET only)
-  - [ ] `GET /admin/dns` and `POST /admin/dns/*`
-  - [ ] Remove `/dns` (no redirect)
-- [ ] 3) Implement route-level authorization checks per the matrix
-- [ ] 4) Add/adjust unit tests for authorization behavior
-- [ ] 5) Verify locally (test mode)
+- [x] 1) Update [design-app-http] to reflect per-route access rules
+- [x] 2) Add admin pages and routing:
+  - [x] `GET /admin`
+  - [x] `GET /admin/users` (GET only)
+  - [x] `GET /admin/keys` (GET only)
+  - [x] `GET /admin/dns` and `POST /admin/dns/*`
+  - [x] Remove `/dns` (no redirect)
+- [x] 3) Implement route-level authorization checks per the matrix
+- [x] 4) Add/adjust unit tests for authorization behavior
+- [x] 5) Verify locally (test mode)
 
 ## Progress
 
@@ -87,6 +88,14 @@ Routing compatibility:
 - 2026-01-04T11:48:20Z
   - Clarified UI and data rules for `/admin/users` (show both email+userID; list derived from current key owners)
   - Confirmed DNS POST operations move from `/dns/*` to `/admin/dns/*` as-is
+
+- 2026-01-04T12:05:06Z
+  - Implemented `/admin/*` pages and admin-only enforcement
+  - Migrated DNS management from `/dns` to `/admin/dns` and removed `/dns`
+  - Updated unit tests and E2E to use `/admin/dns`
+
+- 2026-01-04T12:30:22Z
+  - Corrected `/admin/keys` behavior: it is a key list page (Owner/Fingerprint/Status/Created), not a users overview
 
 ## References
 

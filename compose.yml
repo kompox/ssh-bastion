@@ -9,6 +9,7 @@ services:
       SSHBASTION_AUTH_OVERRIDE_USER_ID: test-user-123
       SSHBASTION_AUTH_OVERRIDE_EMAIL: developer@localhost
       SSHBASTION_LOG_LEVEL: info
+      SSHBASTION_ROLE_DEFAULT: admin
     volumes:
       - ${SSHBASTION_HOST_DATA_DIR:-./_tmp/data}:/data
     ports:
