@@ -1,11 +1,11 @@
-# Kompox ssh-bastion
+# Kompox SSH Bastion
 
-Shared SSH bastion (ProxyJump) + small web UI to manage SSH public keys and DNS alias rules used only by the bastion.
+Shared SSH bastion (OpenSSH `-J` / `ProxyJump` compatible) behind a single public IP address / LoadBalancer rule (e.g. TCP/22) + small web UI to manage SSH public keys and DNS alias rules used only by the bastion.
 
 ## Features
 
-- Shared SSH bastion for teams using standard `ssh -J` / `ProxyJump`.
-- Share a single public IP address / LoadBalancer rule (e.g. TCP/22) for many SSH targets.
+- SSH bastion using standard `ssh -J` / `ProxyJump`.
+- Reuse a single public IP address / LoadBalancer rule (e.g. TCP/22) for many SSH targets.
 - Web UI to manage SSH public keys (no private keys stored).
 - Admin-only DNS alias rules for SSH targets.
 - In-app DNS proxy (bastion-local) for “CNAME-like” aliasing:
@@ -14,7 +14,7 @@ Shared SSH bastion (ProxyJump) + small web UI to manage SSH public keys and DNS 
 
 ## Example use case: Gitea sites on Kubernetes
 
-Multiplex SSH accesses to multiple Gitea sites via single ssh-bastion with single public IP address and LoadBalancer rule.
+Multiplex SSH connections to multiple Gitea sites via single ssh-bastion with single public IP address and LoadBalancer rule.
 
 This allows you to keep the external LoadBalancer rules minimal (e.g. a single SSH entrypoint on TCP/22), while selecting the target per hostname via ssh-bastion's DNS aliasing.
 
@@ -51,7 +51,7 @@ subgraph Kubernetes Cluster
     end
     subgraph "Gitea 1 Pod"
         GITEA-SSH["GITEA1-SSH<br>gitea1.gitea1.svc.cluster.local:22"]
-        GITEA-HTTP["GITEA1-HTTP<br>gitea1.gitea1.svc.cluster.local:8080"]
+        GITEA-HTTP["GITEA1-HTTP<br>gitea1.gitea1.svc.cluster.local:3000"]
     end
     subgraph "SSH-Bastion Pod"
         subgraph "auth container"
