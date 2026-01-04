@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-04T09:30:07Z
+updated: 2026-01-04T09:36:58Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -10,6 +10,14 @@ assistedBy: github/copilot (vscode) gpt-5.2
 This roadmap complements [design-overview]. Container-specific decisions are tracked in [design-containers].
 
 ## IN-PROGRESS
+
+### DNS proxy: upstream selection
+
+- Implement upstream DNS selection logic so it works without explicit config:
+  - Prefer `SSHBASTION_DNS_UPSTREAM` when set
+  - Otherwise, auto-detect from `/etc/resolv.conf` (first `nameserver`, add `:53`)
+  - IPv6: support bracket form (e.g. `[fd00::1]:53`)
+- Task: [task-20260104d-dns-upstream-autodetect](../tasks/task-20260104d-dns-upstream-autodetect.md)
 
 ## TODO
 
@@ -44,13 +52,6 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 - Define/implement reload behavior when generated files change:
   - DNS proxy: changes take effect without reload (reads alias registry at query time)
   - sshd: ensure it picks up updated `authorized_keys` reliably
-
-### DNS proxy: upstream selection
-
-- Implement upstream DNS selection logic so it works without explicit config:
-  - Prefer `SSHBASTION_DNS_UPSTREAM` when set
-  - Otherwise, auto-detect from `/etc/resolv.conf` (first `nameserver`, add `:53`)
-  - IPv6: support bracket form (e.g. `[fd00::1]:53`)
 
 ### Kubernetes manifests / Helm
 
