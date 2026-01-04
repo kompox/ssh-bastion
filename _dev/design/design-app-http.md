@@ -2,7 +2,7 @@
 id: design-app-http
 title: App HTTP (Routes & Sitemap)
 status: stable
-updated: 2026-01-04T09:09:31Z
+updated: 2026-01-04T11:07:34Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # App HTTP (Routes & Sitemap)
@@ -27,44 +27,67 @@ This document complements [design-overview].
 - Validation / not found: `400 Bad Request` with the same page rendered and a flash message.
 - Unexpected server errors: `500 Internal Server Error` with the same page rendered and a flash message.
 
+## Roles & Permissions
+
+This section documents intended access rules derived from [design-roadmap].
+
+Roles:
+
+|Role|Key permissions|DNS alias permissions|Home/admin permissions|
+|-|-|-|-|
+|`admin`|Manage all users’ SSH public keys|Manage DNS alias rules|View and edit home content via `/admin`|
+|`user`|Manage own SSH public keys only|No access (cannot view or change)|View home only|
+
+Note: route-level authorization enforcement may lag behind this document.
+
 ## Route List
 
 ### Pages (GET)
 
 - `GET /`
   - `200 OK`: Home
+  - Access: `admin`, `user`
   - Content source: `${SSHBASTION_DATA_DIR}/content/pages/home.md` (default base: `/data`)
   - If missing: render a minimal placeholder (do not break the app)
 - `GET /ssh`
   - `200 OK`: SSH Keys page
+  - Access: `admin`, `user`
 - `GET /dns`
   - `200 OK`: DNS Aliases page
+  - Access: `admin` only
 - `GET /admin`
   - `200 OK`: Placeholder page (future use)
+  - Access: `admin` only
 
 ### Key operations (POST)
 
 - `POST /ssh/keys`
   - `303`: add key success → redirect to `/ssh`
   - `400`: validation error → render `/ssh` with `flash-error`
+  - Access: `admin` (any user), `user` (own keys)
 - `POST /ssh/keys/{fingerprint}/enable`
   - `303`: enable success → redirect to `/ssh`
   - `400`: key not found → render `/ssh` with `flash-warning`
+  - Access: `admin` (any user), `user` (own keys)
 - `POST /ssh/keys/{fingerprint}/disable`
   - `303`: disable success → redirect to `/ssh`
   - `400`: key not found → render `/ssh` with `flash-warning`
+  - Access: `admin` (any user), `user` (own keys)
 - `POST /ssh/keys/{fingerprint}/delete`
   - `303`: delete success → redirect to `/ssh`
   - `400`: key not found → render `/ssh` with `flash-warning`
+  - Access: `admin` (any user), `user` (own keys)
 
 ### DNS operations (POST)
 
 - `POST /dns`
   - `303`: add alias success → redirect to `/dns`
   - `400`: validation error → render `/dns` with `flash-error`
+  - Access: `admin` only
 - `POST /dns/{source}/delete`
   - `303`: delete success → redirect to `/dns`
   - `400`: alias not found → render `/dns` with `flash-warning`
+  - Access: `admin` only
 
 ## Sitemap
 

@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-04T10:03:27Z
+updated: 2026-01-04T11:11:09Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -10,19 +10,6 @@ assistedBy: github/copilot (vscode) gpt-5.2
 This roadmap complements [design-overview]. Container-specific decisions are tracked in [design-containers].
 
 ## IN-PROGRESS
-
-### Roles: admin and user
-
-- Introduce roles to control access levels
-- Configuration (environment variables):
-  - `SSHBASTION_ROLE_ADMIN_IDS`: comma-separated list of admin user IDs
-  - `SSHBASTION_ROLE_DEFAULT`: default role for users not in the admin list (default: `user`)
-- Task: [task-20260104e-roles-admin-user](../tasks/task-20260104e-roles-admin-user.md)
-
-|Role|Capabilities|
-|-|-|
-|`admin`|Full access to all users' keys and DNS aliases|
-|`user`|Manage own keys and DNS aliases only|
 
 ## TODO
 
@@ -73,6 +60,19 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
   - Minimal “how to run locally” notes (test mode + data dir)
 
 ## DONE
+
+### Roles: admin and user
+
+- Introduce roles to control access levels
+- Configuration (environment variables):
+  - `SSHBASTION_ROLE_ADMIN_IDS`: comma-separated list of admin user IDs
+  - `SSHBASTION_ROLE_DEFAULT`: default role for users not in the admin list (default: `user`)
+- Task: [task-20260104e-roles-admin-user](../tasks/task-20260104e-roles-admin-user.md)
+
+|Role|Capabilities|
+|-|-|
+|`admin`|Full access to all users' keys and DNS aliases|
+|`user`|Manage own keys and DNS aliases only|
 
 ### DNS proxy: upstream autodetect
 

@@ -1,8 +1,8 @@
 ---
 id: task-20260104e-roles-admin-user
 title: Roles: admin and user
-status: in-progress
-updated: 2026-01-04T10:57:56Z
+status: done
+updated: 2026-01-04T11:07:34Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 
@@ -45,10 +45,10 @@ UI requirement:
 - [x] 1) Implement role config/env parsing (`SSHBASTION_ROLE_DEFAULT`, `SSHBASTION_ROLE_ADMIN_IDS`)
 - [x] 2) Propagate role via auth middleware context
 - [x] 3) Update web UI header: show role next to username (top-right)
-- [ ] 4) Document Roles/Permissions in [design-app-http]:
-  - [ ] Add Roles/Permissions section
-  - [ ] For each route, state access derived from [design-roadmap] (who can view/operate)
-- [ ] 5) Update design docs / README if needed
+- [x] 4) Document Roles/Permissions in [design-app-http]:
+  - [x] Add Roles/Permissions section
+  - [x] For each route, state access derived from [design-roadmap] (who can view/operate)
+- [x] 5) Update design docs / README if needed
 
 ## Progress
 
@@ -71,6 +71,10 @@ UI requirement:
   - Implemented role derivation (admin/user) and role display in the header (`email (role)`)
   - Verified behavior manually; unit tests passing (`make test`)
   - Note: authorization enforcement is not treated as completed in the current implementation
+
+- 2026-01-04T11:07:34Z
+  - Updated [design-app-http] with Roles/Permissions and per-route access
+  - Marked this task as done
 
 ## References
 
