@@ -32,13 +32,13 @@ func TestDeleteKey_MissingKey_RendersPageWithError(t *testing.T) {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /keys/{fingerprint}/delete", srv.handleDeleteKey)
+	mux.HandleFunc("POST /ssh/keys/{fingerprint}/delete", srv.handleDeleteKey)
 
 	cfg := &config.Config{OverrideUserID: "test-user", OverrideEmail: "test@example.com", UserIDHeader: "X", EmailHeader: "Y"}
 	authMw := auth.NewMiddleware(cfg)
 	handler := authMw.Authenticate(mux)
 
-	req := httptest.NewRequest("POST", "/keys/doesnotexist/delete", nil)
+	req := httptest.NewRequest("POST", "/ssh/keys/doesnotexist/delete", nil)
 	res := httptest.NewRecorder()
 
 	handler.ServeHTTP(res, req)

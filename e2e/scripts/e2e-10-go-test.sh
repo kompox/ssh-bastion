@@ -16,6 +16,14 @@ main() {
 
   cd "${root}"
 
+  # E2E runs create a unique docker-compose project (and thus a unique network).
+  # If prior runs were interrupted (Ctrl+C, crash), those networks can accumulate
+  # and eventually exhaust Docker's default address pools.
+  # Best-effort cleanup: remove stale E2E networks from previous runs.
+  docker network ls --format '{{.Name}}' \
+    | grep -E '^ssh-bastion-e2e-' \
+    | xargs -r docker network rm >/dev/null 2>&1 || true
+
   local tmp_root host_data_dir project
   tmp_root="$(mktemp -d "${root}/_tmp/e2e-XXXXXXXX")"
   host_data_dir="${tmp_root}/data"

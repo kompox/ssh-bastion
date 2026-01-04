@@ -14,6 +14,13 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
+# E2E runs create a unique docker-compose project (and thus a unique network).
+# If prior runs were interrupted, those networks can accumulate and exhaust
+# Docker's default address pools. Best-effort cleanup of stale E2E networks.
+docker network ls --format '{{.Name}}' \
+  | grep -E '^ssh-bastion-e2e-' \
+  | xargs -r docker network rm >/dev/null 2>&1 || true
+
 tmp_root="$(mktemp -d "${repo_root}/_tmp/e2e-XXXXXXXX")"
 host_data_dir="${tmp_root}/data"
 mkdir -p "${host_data_dir}"
@@ -79,9 +86,9 @@ if [ ! -s "$pub_key" ]; then
 fi
 
 echo "[4/7] Registering public key via web app…" >&2
-status="$(curl -sS -o /dev/null -w "%{http_code}" -X POST --data-urlencode "publicKey@${pub_key}" http://localhost:8080/keys)"
+status="$(curl -sS -o /dev/null -w "%{http_code}" -X POST --data-urlencode "publicKey@${pub_key}" http://localhost:8080/ssh/keys)"
 if [ "$status" != "303" ]; then
-  echo "ERROR: expected POST /keys to return 303, got ${status}" >&2
+  echo "ERROR: expected POST /ssh/keys to return 303, got ${status}" >&2
   exit 1
 fi
 

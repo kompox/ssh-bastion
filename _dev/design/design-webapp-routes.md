@@ -2,7 +2,7 @@
 id: design-webapp-routes
 title: Web App Routes & Sitemap
 status: stable
-updated: 2026-01-02T18:56:16Z
+updated: 2026-01-04T08:10:37Z
 ---
 # Web App Routes & Sitemap
 
@@ -17,6 +17,7 @@ This document complements [design-overview].
 - The app is server-rendered HTML.
 - All routes are wrapped by the auth middleware (trusted-header based). See auth behavior in other docs; this doc focuses on routing.
 - Some actions accept a path parameter that may be URL-escaped in the client (e.g. `fingerprint`).
+- MVP posture: HTMX-style HTML endpoints first; add `/api/*` only if a real REST/JSON consumer appears.
 
 ### Status code conventions
 
@@ -30,24 +31,30 @@ This document complements [design-overview].
 ### Pages (GET)
 
 - `GET /`
+  - `200 OK`: Home
+  - Content source: `${SSHBASTION_DATA_DIR}/content/pages/home.md` (default base: `/data`)
+  - If missing: render a minimal placeholder (do not break the app)
+- `GET /ssh`
   - `200 OK`: SSH Keys page
 - `GET /dns`
   - `200 OK`: DNS Aliases page
+- `GET /admin`
+  - `200 OK`: Placeholder page (future use)
 
 ### Key operations (POST)
 
-- `POST /keys`
-  - `303`: add key success → redirect to `/`
-  - `400`: validation error → render `/` with `flash-error`
-- `POST /keys/{fingerprint}/enable`
-  - `303`: enable success → redirect to `/`
-  - `400`: key not found → render `/` with `flash-warning`
-- `POST /keys/{fingerprint}/disable`
-  - `303`: disable success → redirect to `/`
-  - `400`: key not found → render `/` with `flash-warning`
-- `POST /keys/{fingerprint}/delete`
-  - `303`: delete success → redirect to `/`
-  - `400`: key not found → render `/` with `flash-warning`
+- `POST /ssh/keys`
+  - `303`: add key success → redirect to `/ssh`
+  - `400`: validation error → render `/ssh` with `flash-error`
+- `POST /ssh/keys/{fingerprint}/enable`
+  - `303`: enable success → redirect to `/ssh`
+  - `400`: key not found → render `/ssh` with `flash-warning`
+- `POST /ssh/keys/{fingerprint}/disable`
+  - `303`: disable success → redirect to `/ssh`
+  - `400`: key not found → render `/ssh` with `flash-warning`
+- `POST /ssh/keys/{fingerprint}/delete`
+  - `303`: delete success → redirect to `/ssh`
+  - `400`: key not found → render `/ssh` with `flash-warning`
 
 ### DNS operations (POST)
 
@@ -62,20 +69,28 @@ This document complements [design-overview].
 
 ```text
 /
-  (POST /keys)                Add key
-  (POST /keys/{fp}/enable)    Enable key
-  (POST /keys/{fp}/disable)   Disable key
-  (POST /keys/{fp}/delete)    Delete key
+  Home (markdown)
+
+/ssh
+  (POST /ssh/keys)                Add key
+  (POST /ssh/keys/{fp}/enable)    Enable key
+  (POST /ssh/keys/{fp}/disable)   Disable key
+  (POST /ssh/keys/{fp}/delete)    Delete key
 
 /dns
   (POST /dns)                 Add alias
   (POST /dns/{source}/delete) Delete alias
+
+/admin
+  Placeholder (future use)
 ```
 
 ## References
 
 - [design-overview] - Design overview document
 - [design-containers] - Containers (image + runtime topology)
+- [design-roadmap] - Development roadmap
+- [task-20260104b-webapp-routing-update] - Web app site map and routing update
 
 - Source of truth: `internal/web/server.go`
 - Templates:
@@ -85,3 +100,5 @@ This document complements [design-overview].
 
 [design-overview]: ../design/design-overview.md
 [design-containers]: ../design/design-containers.md
+[design-roadmap]: ../design/design-roadmap.md
+[task-20260104b-webapp-routing-update]: ../tasks/task-20260104b-webapp-routing-update.md

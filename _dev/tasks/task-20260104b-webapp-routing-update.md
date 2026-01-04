@@ -1,8 +1,8 @@
 ---
 id: task-20260104b-webapp-routing-update
 title: Web app site map and routing update
-status: in-progress
-updated: 2026-01-04T07:54:06Z
+status: done
+updated: 2026-01-04T08:31:10Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 
@@ -16,12 +16,12 @@ The web app currently serves SSH key and DNS alias management pages, but the sit
 
 Update the web app routes to match the roadmap site map:
 
-- `/` → Frontpage (show markdown page authored by admin)
+- `/` → Home (show markdown page authored by admin)
 - `/ssh` → SSH key management
 - `/dns` → DNS alias management (no change in this task)
 - `/admin` → Admin dashboard (future use)
 
-Additionally, move existing SSH key management endpoints under `/ssh/*`.
+Additionally, move existing SSH key management endpoints under `/ssh` (key operations under `/ssh/keys/...`).
 
 Define where admin-authored markdown content is stored under `/data` and how the server reads it.
 
@@ -31,8 +31,8 @@ Define where admin-authored markdown content is stored under `/data` and how the
 
 - Implement routing so the paths above are available.
 - Keep existing SSH key management and DNS alias management functionality working.
-- Move the existing SSH key management endpoints under `/ssh/*`.
-- Define a stable, extensible on-disk layout under `/data` for admin-authored markdown content (starting with the frontpage).
+- Move the existing SSH key management endpoints under `/ssh`.
+- Define a stable, extensible on-disk layout under `/data` for admin-authored markdown content (starting with the home page).
 
 ### Out
 
@@ -52,18 +52,18 @@ This task does not implement the Web UI editor yet, but it must define the stora
   - `${SSHBASTION_DATA_DIR}` defaults to `/data`.
 - All admin-authored markdown files live under `${SSHBASTION_DATA_DIR}/content/pages/`.
 
-### Frontpage
+### Home
 
-- File path: `${SSHBASTION_DATA_DIR}/content/pages/frontpage.md`
+- File path: `${SSHBASTION_DATA_DIR}/content/pages/home.md`
 - Encoding: UTF-8.
 - Missing file behavior:
-  - If the file does not exist, the frontpage should still render, but with a minimal placeholder message indicating it is not configured.
+  - If the file does not exist, the home page should still render, but with a minimal placeholder message indicating it is not configured.
   - This avoids breaking the app on first boot.
 
-### Extensibility (not limited to frontpage)
+### Extensibility (not limited to home)
 
 - Additional customizable pages can be added as separate files under `${SSHBASTION_DATA_DIR}/content/pages/`.
-- Naming convention (proposed): `${pageId}.md` where `pageId` is a stable identifier (e.g. `frontpage`, `help`, `about`).
+- Naming convention (proposed): `${pageId}.md` where `pageId` is a stable identifier (e.g. `home`, `help`, `about`).
 - The server must treat `pageId` as an identifier (not a raw path) to prevent path traversal; only resolve to a filename under `content/pages/`.
 
 ### Read behavior
@@ -74,35 +74,40 @@ This task does not implement the Web UI editor yet, but it must define the stora
 
 ## Plan & Checklist
 
-- [ ] 1) Update routing documentation
-  - [ ] Update [design-webapp-routes] to reflect the new sitemap and paths
+- [x] 1) Update routing documentation
+  - [x] Update [design-webapp-routes] to reflect the new sitemap and paths
 
-- [ ] 2) Specify markdown storage under `/data`
-  - [ ] Adopt `${SSHBASTION_DATA_DIR}/content/pages/frontpage.md` as the frontpage source
-  - [ ] Define missing-file behavior and extensibility rules
+- [x] 2) Specify markdown storage under `/data`
+  - [x] Adopt `${SSHBASTION_DATA_DIR}/content/pages/home.md` as the home source
+  - [x] Define missing-file behavior and extensibility rules
 
-- [ ] 3) Move SSH key management under `/ssh/*`
-  - [ ] Change existing handlers/routes from `/keys/*` to `/ssh/keys/*` (and related redirects)
-  - [ ] Ensure templates still render correctly
-  - [ ] Update/adjust unit tests accordingly
+- [x] 3) Move SSH key management under `/ssh`
+  - [x] Change existing handlers/routes from `/keys` to `/ssh/keys` (and related redirects)
+  - [x] Ensure templates still render correctly
+  - [x] Update/adjust unit tests accordingly
 
-- [ ] 4) Add `/` frontpage route
-  - [ ] Render an admin-authored markdown page
-  - [ ] Add basic tests for rendering
+- [x] 4) Add `/` home route
+  - [x] Render an admin-authored markdown page
+  - [x] Add basic tests for rendering
 
-- [ ] 5) Add `/admin` placeholder route
-  - [ ] Minimal handler that returns a stub page (future use)
+- [x] 5) Add `/admin` placeholder route
+  - [x] Minimal handler that returns a stub page (future use)
 
-- [ ] 6) Verify
-  - [ ] `make test`
+- [x] 6) Verify
+  - [x] `make test`
 
-- [ ] 7) Document API posture
-  - [ ] Keep HTMX (HTML) endpoints as the MVP; add `/api/*` only if a real REST/JSON consumer appears
+- [x] 7) Document API posture
+  - [x] Keep HTMX (HTML) endpoints as the MVP; add `/api/*` only if a real REST/JSON consumer appears
+
+- [x] 8) E2E follow-ups
+  - [x] Update E2E scripts for routing changes (`/keys` -> `/ssh/keys`)
+  - [x] Add best-effort cleanup for stale `ssh-bastion-e2e-*` docker networks
+  - [x] `make e2e`
 
 ## Progress
 
 - 2026-01-04T07:22:07Z
-  - Task created and moved to IN-PROGRES in roadmap
+  - Task created and moved to IN-PROGRESS in roadmap
 
 - 2026-01-04T07:25:01Z
   - Added doc update step and reference for `design-webapp-routes`
@@ -114,10 +119,21 @@ This task does not implement the Web UI editor yet, but it must define the stora
   - Dropped `/dns` changes from scope (admin-only requires roles/permissions)
 
 - 2026-01-04T07:34:50Z
-  - Defined `/data` markdown storage layout for frontpage and future pages
+  - Defined `/data` markdown storage layout for home and future pages
 
 - 2026-01-04T07:54:06Z
   - Noted MVP approach: HTMX first; `/api/*` deferred until needed
+
+- 2026-01-04T08:03:59Z
+  - Implemented routing updates (`/` home, `/ssh` keys, `/ssh/keys/...` key operations, `/admin` placeholder) and updated docs/templates/tests; verified `make test`
+
+- 2026-01-04T08:21:30Z
+  - Standardized home naming and source path (`${SSHBASTION_DATA_DIR}/content/pages/home.md`) across docs and templates; verified `make test`
+
+- 2026-01-04T08:28:40Z
+  - Fixed E2E scripts for routing changes: `POST /keys` -> `POST /ssh/keys`
+  - Added best-effort cleanup for stale `ssh-bastion-e2e-*` docker networks (prevents Docker address pool exhaustion)
+  - Verified `make e2e`
 
 ## References
 

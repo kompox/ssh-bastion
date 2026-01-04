@@ -3,7 +3,7 @@
 
 <article>
     <header><strong>Add New Key</strong></header>
-    <form method="POST" action="/keys">
+    <form method="POST" action="/ssh/keys">
         <label>
             Public Key
             <textarea name="publicKey" rows="5" placeholder="ssh-rsa AAAAB3NzaC1..." required>{{.FormPublicKey}}</textarea>
@@ -37,15 +37,15 @@
             <td>{{.CreatedAt.Format "2006-01-02 15:04"}}</td>
             <td>
                 {{if .Enabled}}
-                <form method="POST" action="/keys/{{.Fingerprint | urlquery}}/disable" style="display:inline">
+                <form method="POST" action="/ssh/keys/{{.Fingerprint | urlquery}}/disable" style="display:inline">
                     <button type="submit" class="secondary">Disable</button>
                 </form>
                 {{else}}
-                <form method="POST" action="/keys/{{.Fingerprint | urlquery}}/enable" style="display:inline">
+                <form method="POST" action="/ssh/keys/{{.Fingerprint | urlquery}}/enable" style="display:inline">
                     <button type="submit" class="secondary">Enable</button>
                 </form>
                 {{end}}
-                <form method="POST" action="/keys/{{.Fingerprint | urlquery}}/delete" style="display:inline">
+                <form method="POST" action="/ssh/keys/{{.Fingerprint | urlquery}}/delete" style="display:inline">
                     <button type="submit" class="contrast">Delete</button>
                 </form>
             </td>

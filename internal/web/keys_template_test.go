@@ -58,7 +58,7 @@ func TestKeysTemplate_URLencodesFingerprintInActions(t *testing.T) {
 	}
 
 	html := buf.String()
-	if !bytes.Contains([]byte(html), []byte("/keys/SHA256%3Aabc%2Fdef%2Bghi%3D%3D/disable")) {
+	if !bytes.Contains([]byte(html), []byte("/ssh/keys/SHA256%3Aabc%2Fdef%2Bghi%3D%3D/disable")) {
 		t.Fatalf("expected disable action to URL-encode fingerprint; got HTML: %s", html)
 	}
 }

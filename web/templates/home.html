@@ -1,0 +1,17 @@
+{{define "home_content"}}
+<h1>Home</h1>
+
+{{if .FlashMessage}}
+<article role="alert" class="flash flash-{{.FlashKind}}">
+	<p>{{.FlashMessage}}</p>
+</article>
+{{end}}
+
+<article>
+	{{if .HomeHTML}}
+		{{.HomeHTML}}
+	{{else}}
+		<p>Home is not configured.</p>
+	{{end}}
+</article>
+{{end}}

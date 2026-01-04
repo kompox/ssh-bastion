@@ -29,14 +29,19 @@
             <li><strong>SSH Bastion</strong></li>
         </ul>
         <ul>
-            <li><a href="/">SSH Keys</a></li>
+            <li><a href="/">Home</a></li>
+            <li><a href="/ssh">SSH Keys</a></li>
             <li><a href="/dns">DNS Aliases</a></li>
             {{if .Email}}<li><small>{{.Email}}</small></li>{{end}}
         </ul>
     </nav>
     <main class="container">
-        {{if eq .Page "dns"}}
+        {{if eq .Page "home"}}
+            {{template "home_content" .}}
+        {{else if eq .Page "dns"}}
             {{template "dns_content" .}}
+        {{else if eq .Page "admin"}}
+            {{template "admin_content" .}}
         {{else}}
             {{template "keys_content" .}}
         {{end}}

@@ -33,7 +33,7 @@ func TestAddKey_InvalidKey_RendersPageWithError(t *testing.T) {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /keys", srv.handleAddKey)
+	mux.HandleFunc("POST /ssh/keys", srv.handleAddKey)
 
 	cfg := &config.Config{OverrideUserID: "test-user", OverrideEmail: "test@example.com", UserIDHeader: "X", EmailHeader: "Y"}
 	authMw := auth.NewMiddleware(cfg)
@@ -43,7 +43,7 @@ func TestAddKey_InvalidKey_RendersPageWithError(t *testing.T) {
 	form := url.Values{}
 	form.Set("publicKey", invalidKey)
 
-	req := httptest.NewRequest("POST", "/keys", strings.NewReader(form.Encode()))
+	req := httptest.NewRequest("POST", "/ssh/keys", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	res := httptest.NewRecorder()
 

@@ -2,25 +2,14 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-04T07:54:06Z
+updated: 2026-01-04T08:25:30Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
 
 This roadmap complements [design-overview]. Container-specific decisions are tracked in [design-containers].
 
-## IN-PROGRES
-
-### Web app: site map and routing update
-
-- Site map:
-  - `/` frontpage (reads markdown from `${SSHBASTION_DATA_DIR}/content/pages/frontpage.md`; default base: `/data`; missing file shows placeholder)
-  - `/ssh` SSH key management (move existing key endpoints under `/ssh`)
-  - `/dns` DNS alias management (no change until roles/permissions exist)
-  - `/admin` placeholder (future use)
-- TODO: update [design-webapp-routes]; migrate `/keys` → `/ssh/keys` (redirects/tests); add `/` + `/admin`
-- Approach: HTMX + server-rendered HTML for MVP; defer adding `/api/*` until a real REST/JSON need emerges
-- Task: [task-20260104b-webapp-routing-update](../tasks/task-20260104b-webapp-routing-update.md)
+## IN-PROGRESS
 
 ## TODO
 
@@ -83,6 +72,16 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
   - Minimal “how to run locally” notes (test mode + data dir)
 
 ## DONE
+
+### Web app: site map and routing update
+
+- Site map:
+  - `/` home (reads markdown from `${SSHBASTION_DATA_DIR}/content/pages/home.md`; default base: `/data`; missing file shows placeholder)
+  - `/ssh` SSH key management (key endpoints under `/ssh/keys/...`)
+  - `/dns` DNS alias management (no change until roles/permissions exist)
+  - `/admin` placeholder (future use)
+- Approach: HTMX + server-rendered HTML for MVP; defer adding `/api/*` until a real REST/JSON need emerges
+- Task: [task-20260104b-webapp-routing-update](../tasks/task-20260104b-webapp-routing-update.md)
 
 ### DNS alias testing
 

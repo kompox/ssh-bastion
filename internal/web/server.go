@@ -14,6 +14,7 @@ import (
 	"github.com/kompox/ssh-bastion/internal/dns"
 	"github.com/kompox/ssh-bastion/internal/keys"
 	"github.com/kompox/ssh-bastion/internal/storage"
+	"github.com/yuin/goldmark"
 )
 
 type Server struct {
@@ -52,11 +53,14 @@ func Run(addr string) error {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /", srv.handleKeysPage)
-	mux.HandleFunc("POST /keys", srv.handleAddKey)
-	mux.HandleFunc("POST /keys/{fingerprint}/enable", srv.handleEnableKey)
-	mux.HandleFunc("POST /keys/{fingerprint}/disable", srv.handleDisableKey)
-	mux.HandleFunc("POST /keys/{fingerprint}/delete", srv.handleDeleteKey)
+	mux.HandleFunc("GET /", srv.handleHome)
+	mux.HandleFunc("GET /ssh", srv.handleKeysPage)
+	mux.HandleFunc("GET /admin", srv.handleAdminPage)
+
+	mux.HandleFunc("POST /ssh/keys", srv.handleAddKey)
+	mux.HandleFunc("POST /ssh/keys/{fingerprint}/enable", srv.handleEnableKey)
+	mux.HandleFunc("POST /ssh/keys/{fingerprint}/disable", srv.handleDisableKey)
+	mux.HandleFunc("POST /ssh/keys/{fingerprint}/delete", srv.handleDeleteKey)
 
 	mux.HandleFunc("GET /dns", srv.handleDNSPage)
 	mux.HandleFunc("POST /dns", srv.handleAddAlias)
@@ -73,6 +77,82 @@ func Run(addr string) error {
 	)
 
 	return http.ListenAndServe(addr, handler)
+}
+
+func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
+	email := auth.GetEmail(r)
+	flashKind := ""
+	flashMsg := ""
+
+	homePath := filepath.Join(s.cfg.DataDir, "content", "pages", "home.md")
+	mdBytes, err := os.ReadFile(homePath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			s.logError(err, "read home markdown failed",
+				"op", "home_read",
+				"method", r.Method,
+				"path", r.URL.Path,
+			)
+			flashKind = "error"
+			flashMsg = "Failed to read home"
+		}
+		mdBytes = nil
+	}
+
+	var rendered template.HTML
+	if len(mdBytes) > 0 {
+		var sb strings.Builder
+		if err := goldmark.Convert(mdBytes, &sb); err != nil {
+			s.logError(err, "render home markdown failed",
+				"op", "home_render",
+				"method", r.Method,
+				"path", r.URL.Path,
+			)
+			flashKind = "error"
+			flashMsg = "Failed to render home"
+		} else {
+			rendered = template.HTML(sb.String())
+		}
+	}
+
+	data := map[string]any{
+		"Title":        "Home",
+		"Email":        email,
+		"Page":         "home",
+		"FlashKind":    flashKind,
+		"FlashMessage": flashMsg,
+		"HomeHTML":     rendered,
+	}
+
+	if err := s.templates.ExecuteTemplate(w, "layout.html", data); err != nil {
+		s.logError(err, "template execution failed",
+			"op", "template_execute",
+			"template", "layout.html",
+			"page", "home",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", http.StatusOK,
+		)
+	}
+}
+
+func (s *Server) handleAdminPage(w http.ResponseWriter, r *http.Request) {
+	email := auth.GetEmail(r)
+	data := map[string]any{
+		"Title": "Admin",
+		"Email": email,
+		"Page":  "admin",
+	}
+	if err := s.templates.ExecuteTemplate(w, "layout.html", data); err != nil {
+		s.logError(err, "template execution failed",
+			"op", "template_execute",
+			"template", "layout.html",
+			"page", "admin",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", http.StatusOK,
+		)
+	}
 }
 
 func (s *Server) handleKeysPage(w http.ResponseWriter, r *http.Request) {
@@ -176,7 +256,7 @@ func (s *Server) handleAddKey(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/ssh", http.StatusSeeOther)
 }
 
 func (s *Server) handleEnableKey(w http.ResponseWriter, r *http.Request) {
@@ -237,7 +317,7 @@ func (s *Server) handleEnableKey(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/ssh", http.StatusSeeOther)
 }
 
 func (s *Server) handleDisableKey(w http.ResponseWriter, r *http.Request) {
@@ -298,7 +378,7 @@ func (s *Server) handleDisableKey(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/ssh", http.StatusSeeOther)
 }
 
 func (s *Server) handleDeleteKey(w http.ResponseWriter, r *http.Request) {
@@ -359,7 +439,7 @@ func (s *Server) handleDeleteKey(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/ssh", http.StatusSeeOther)
 }
 
 func (s *Server) handleDNSPage(w http.ResponseWriter, r *http.Request) {

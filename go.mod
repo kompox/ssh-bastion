@@ -5,6 +5,7 @@ go 1.25.5
 require (
 	github.com/google/uuid v1.6.0
 	github.com/miekg/dns v1.1.68
+	github.com/yuin/goldmark v1.7.13
 	golang.org/x/crypto v0.46.0
 )
 
