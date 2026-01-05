@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-04T23:03:03Z
+updated: 2026-01-05T23:10:08Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -22,7 +22,16 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 - Chart name: `kompox-ssh-bastion` (avoid collisions with existing `ssh-bastion` charts)
 - Task: [task-20260104i-k8s-manifests-helm](../tasks/task-20260104i-k8s-manifests-helm.md)
 
+### Security: DNS proxy hardening
+
+- Add settings to restrict DNS proxy resolution to configured aliases only (return NXDOMAIN for all other queries).
+- Task: [task-20260105a-dns-proxy-hardening](../tasks/task-20260105a-dns-proxy-hardening.md)
+
 ## TODO
+
+### Security: SSH port forwarding hardening
+
+- Add settings to restrict sshd port forwarding to configured targets only (disallow arbitrary numerical addresses).
 
 ### Container entrypoints
 
