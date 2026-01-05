@@ -71,8 +71,8 @@ func Load() (*Config, error) {
 		cfg.UserIDHeader = getEnv("SSHBASTION_AUTH_USER_ID_HEADER", "X-MS-CLIENT-PRINCIPAL-ID")
 		cfg.EmailHeader = getEnv("SSHBASTION_AUTH_EMAIL_HEADER", "X-MS-CLIENT-PRINCIPAL-NAME")
 	case "oauth2_proxy":
-		cfg.UserIDHeader = getEnv("SSHBASTION_AUTH_USER_ID_HEADER", "X-Auth-Request-User")
-		cfg.EmailHeader = getEnv("SSHBASTION_AUTH_EMAIL_HEADER", "X-Auth-Request-Email")
+		cfg.UserIDHeader = getEnv("SSHBASTION_AUTH_USER_ID_HEADER", "X-Forwarded-User")
+		cfg.EmailHeader = getEnv("SSHBASTION_AUTH_EMAIL_HEADER", "X-Forwarded-Email")
 	default:
 		return nil, fmt.Errorf("invalid SSHBASTION_AUTH_MODE: %s (must be easy_auth or oauth2_proxy)", cfg.AuthMode)
 	}

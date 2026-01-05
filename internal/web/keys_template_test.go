@@ -42,9 +42,10 @@ func TestKeysTemplate_URLencodesFingerprintInActions(t *testing.T) {
 
 	fingerprint := "SHA256:abc/def+ghi=="
 	data := map[string]any{
-		"Title": "SSH Keys",
-		"Email": "test@example.com",
-		"Page":  "keys",
+		"Title":    "SSH Keys",
+		"Email":    "test@example.com",
+		"AuthMode": "oauth2_proxy",
+		"Page":     "keys",
 		"Keys": []*keys.Key{{
 			Fingerprint: fingerprint,
 			Enabled:     true,

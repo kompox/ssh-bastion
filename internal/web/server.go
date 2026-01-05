@@ -29,6 +29,16 @@ type Server struct {
 	templates   *template.Template
 }
 
+func (s *Server) templateAuthMode() string {
+	if s == nil || s.cfg == nil {
+		return "easy_auth"
+	}
+	if strings.TrimSpace(s.cfg.AuthMode) == "" {
+		return "easy_auth"
+	}
+	return s.cfg.AuthMode
+}
+
 func Run(addr string) error {
 	cfg, err := config.Load()
 	if err != nil {
@@ -127,6 +137,7 @@ func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
 		"Title":        "Home",
 		"Email":        email,
 		"Role":         role,
+		"AuthMode":     s.templateAuthMode(),
 		"Page":         "home",
 		"FlashKind":    flashKind,
 		"FlashMessage": flashMsg,
@@ -149,10 +160,11 @@ func (s *Server) handleAdminPage(w http.ResponseWriter, r *http.Request) {
 	email := auth.GetEmail(r)
 	role := auth.GetRole(r)
 	data := map[string]any{
-		"Title": "Admin",
-		"Email": email,
-		"Role":  role,
-		"Page":  "admin",
+		"Title":    "Admin",
+		"Email":    email,
+		"Role":     role,
+		"AuthMode": s.templateAuthMode(),
+		"Page":     "admin",
 	}
 	if err := s.templates.ExecuteTemplate(w, "layout.html", data); err != nil {
 		s.logError(err, "template execution failed",
@@ -200,6 +212,7 @@ func (s *Server) handleAdminHomePage(w http.ResponseWriter, r *http.Request) {
 		"Title":        "Admin Home",
 		"Email":        email,
 		"Role":         role,
+		"AuthMode":     s.templateAuthMode(),
 		"Page":         "admin_home",
 		"Markdown":     md,
 		"FlashKind":    flashKind,
@@ -263,6 +276,7 @@ func (s *Server) renderAdminHomeEdit(w http.ResponseWriter, r *http.Request, sta
 		"Title":        "Admin Home",
 		"Email":        email,
 		"Role":         role,
+		"AuthMode":     s.templateAuthMode(),
 		"Page":         "admin_home",
 		"Markdown":     md,
 		"FlashKind":    flashKind,
@@ -322,6 +336,7 @@ func (s *Server) renderKeysPage(w http.ResponseWriter, r *http.Request, status i
 		"Title":         "SSH Keys",
 		"Email":         email,
 		"Role":          role,
+		"AuthMode":      s.templateAuthMode(),
 		"Keys":          keysList,
 		"Page":          "keys",
 		"FlashKind":     flashKind,
@@ -621,6 +636,7 @@ func (s *Server) renderAdminDNSPage(w http.ResponseWriter, r *http.Request, stat
 		"Title":           "DNS Aliases",
 		"Email":           email,
 		"Role":            role,
+		"AuthMode":        s.templateAuthMode(),
 		"Aliases":         aliases,
 		"Page":            "admin_dns",
 		"FlashKind":       flashKind,
@@ -794,6 +810,7 @@ func (s *Server) handleAdminUsersPage(w http.ResponseWriter, r *http.Request) {
 		"Title":        "Admin Users",
 		"Email":        email,
 		"Role":         role,
+		"AuthMode":     s.templateAuthMode(),
 		"Page":         "admin_users",
 		"Users":        rows,
 		"FlashKind":    flashKind,
@@ -837,6 +854,7 @@ func (s *Server) handleAdminKeysPage(w http.ResponseWriter, r *http.Request) {
 		"Title":        "Admin Keys",
 		"Email":        email,
 		"Role":         role,
+		"AuthMode":     s.templateAuthMode(),
 		"Page":         "admin_keys",
 		"Keys":         rows,
 		"FlashKind":    flashKind,
