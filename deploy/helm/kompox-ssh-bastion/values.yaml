@@ -56,6 +56,9 @@ edgeProxy:
         keyKey: tls.key
 
 authProxy:
+  # oauth2Proxy | azureEasyAuth
+  provider: oauth2Proxy
+
   oauth2Proxy:
     image:
       repository: quay.io/oauth2-proxy/oauth2-proxy
@@ -76,6 +79,48 @@ authProxy:
     # Common oauth2-proxy settings
     emailDomains:
       - "*"
+
+  azureEasyAuth:
+    image:
+      repository: mcr.microsoft.com/appsvc/middleware
+      tag: stage6
+      pullPolicy: IfNotPresent
+
+    identity:
+      tenantID: ""
+      clientID: ""
+      groupIDs: []
+
+    # If set, mount this existing ConfigMap key to /app/easyauth-config.json.
+    # Otherwise, set config.inlineJSON and this chart will create a ConfigMap.
+    config:
+      existingConfigMapName: ""
+      key: easyauth-config.json
+      inlineJSON: ""
+
+    # Secrets must be provided via an existing Kubernetes Secret.
+    secrets:
+      existingSecretName: ""
+      clientSecretKey: MICROSOFT_PROVIDER_AUTHENTICATION_SECRET
+      encryptionKeyKey: WEBSITE_AUTH_ENCRYPTION_KEY
+      signingKeyKey: WEBSITE_AUTH_SIGNING_KEY
+
+    # Middleware settings. In Kubernetes, env var names cannot contain '.', so we
+    # Host.* settings should be passed as command-line args (e.g. /Host.ListenUrl=...)
+    # because Kubernetes env var names cannot contain '.' and the middleware
+    # expects dotted keys.
+    args:
+      - /Host.ListenUrl=http://127.0.0.1:8000
+      - /Host.DestinationHostUrl=http://127.0.0.1:8080
+      - /Host.AutoHealingMiddlewareEnabled=false
+      - /Host.UseConsoleLogging=true
+      - /Host.UseFileLogging=true
+      - /Host.RewriteHostHeader=false
+
+    # Additional environment variables passed to the middleware container.
+    env:
+      WEBSITE_AUTH_FROM_FILE: "true"
+      WEBSITE_AUTH_FILE_PATH: /app/easyauth-config.json
 
 resources: {}
 nodeSelector: {}

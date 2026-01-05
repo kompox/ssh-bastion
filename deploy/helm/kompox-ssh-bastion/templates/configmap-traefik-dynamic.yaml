@@ -8,6 +8,7 @@ data:
   dynamic.yml: |
     http:
       routers:
+        {{- if eq .Values.authProxy.provider "oauth2Proxy" }}
         oauth2:
           rule: Host(`{{ required "host is required" .Values.host }}`) && PathPrefix(`/oauth2`)
           entryPoints:
@@ -24,11 +25,26 @@ data:
             certResolver: le
           service: oauth2-proxy
 
+        {{- else if eq .Values.authProxy.provider "azureEasyAuth" }}
+        app:
+          rule: Host(`{{ required "host is required" .Values.host }}`) && PathPrefix(`/`)
+          entryPoints:
+            - websecure
+          tls:
+            certResolver: le
+          service: easy-auth
+        {{- end }}
+
       services:
         oauth2-proxy:
           loadBalancer:
             servers:
               - url: http://127.0.0.1:4180
+
+        easy-auth:
+          loadBalancer:
+            servers:
+              - url: http://127.0.0.1:8000
 
         ssh-bastion:
           loadBalancer:

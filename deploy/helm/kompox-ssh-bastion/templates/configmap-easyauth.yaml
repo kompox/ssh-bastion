@@ -1,0 +1,84 @@
+{{- if eq .Values.authProxy.provider "azureEasyAuth" -}}
+{{- $existing := .Values.authProxy.azureEasyAuth.config.existingConfigMapName -}}
+{{- $inline := .Values.authProxy.azureEasyAuth.config.inlineJSON -}}
+{{- $tenantID := .Values.authProxy.azureEasyAuth.identity.tenantID -}}
+{{- $clientID := .Values.authProxy.azureEasyAuth.identity.clientID -}}
+{{- $groupIDs := .Values.authProxy.azureEasyAuth.identity.groupIDs -}}
+
+{{- if and (not $existing) (not $inline) -}}
+  {{- if not $tenantID -}}
+    {{- fail "authProxy.azureEasyAuth.identity.tenantID is required when authProxy.azureEasyAuth.config.existingConfigMapName and authProxy.azureEasyAuth.config.inlineJSON are empty" -}}
+  {{- end -}}
+  {{- if not $clientID -}}
+    {{- fail "authProxy.azureEasyAuth.identity.clientID is required when authProxy.azureEasyAuth.config.existingConfigMapName and authProxy.azureEasyAuth.config.inlineJSON are empty" -}}
+  {{- end -}}
+{{- end -}}
+
+{{- if not $existing }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kompox-ssh-bastion.fullname" . }}-easyauth-config
+  labels:
+    {{- include "kompox-ssh-bastion.labels" . | nindent 4 }}
+data:
+  {{ .Values.authProxy.azureEasyAuth.config.key | quote }}: |
+    {{ if $inline }}
+{{ $inline | nindent 4 }}
+    {{ else }}
+    {
+      "platform": {
+        "enabled": true
+      },
+      "globalValidation": {
+        "requireAuthentication": true,
+        "unauthenticatedClientAction": "RedirectToLoginPage",
+        "redirectToProvider": "azureActiveDirectory",
+        "excludedPaths": []
+      },
+      "identityProviders": {
+        "azureActiveDirectory": {
+          "enabled": true,
+          "registration": {
+            "openIdIssuer": "https://sts.windows.net/{{ $tenantID }}/v2.0",
+            "clientId": "{{ $clientID }}",
+            "clientSecretSettingName": "MICROSOFT_PROVIDER_AUTHENTICATION_SECRET"
+          },
+          "validation": {
+            "allowedAudiences": [
+              "{{ $clientID }}"
+            ]
+            {{- if $groupIDs }},
+            "defaultAuthorizationPolicy": {
+              "allowedPrincipals": {
+                "groups": [
+                  {{- range $i, $g := $groupIDs }}
+                  {{- if $i }},{{ end }}"{{ $g }}"
+                  {{- end }}
+                ]
+              }
+            }
+            {{- end }}
+          },
+          "isAutoProvisioned": false
+        }
+      },
+      "login": {
+        "tokenStore": {
+          "enabled": true,
+          "fileSystem": {
+            "directory": "/data"
+          }
+        },
+        "preserveUrlFragmentsForLogins": false
+      },
+      "httpSettings": {
+        "requireHttps": false,
+        "forwardProxy": {
+          "convention": "Standard"
+        }
+      }
+    }
+    {{ end }}
+{{- end }}
+{{- end }}

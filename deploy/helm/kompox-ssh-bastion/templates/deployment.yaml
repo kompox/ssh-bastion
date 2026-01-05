@@ -31,6 +31,11 @@ spec:
         - name: traefik-dynamic
           configMap:
             name: {{ include "kompox-ssh-bastion.fullname" . }}-traefik-dynamic
+        {{- if eq .Values.authProxy.provider "azureEasyAuth" }}
+        - name: easyauth-config
+          configMap:
+            name: {{ default (printf "%s-easyauth-config" (include "kompox-ssh-bastion.fullname" .)) .Values.authProxy.azureEasyAuth.config.existingConfigMapName }}
+        {{- end }}
       {{- if eq .Values.edgeProxy.traefik.tls.mode "letsEncrypt" }}
       initContainers:
         - name: traefik-acme-init
@@ -81,6 +86,7 @@ spec:
               mountPath: /etc/traefik/dynamic
               readOnly: true
 
+        {{- if eq .Values.authProxy.provider "oauth2Proxy" }}
         - name: oauth2-proxy
           image: {{ printf "%s:%s" .Values.authProxy.oauth2Proxy.image.repository .Values.authProxy.oauth2Proxy.image.tag | quote }}
           imagePullPolicy: {{ .Values.authProxy.oauth2Proxy.image.pullPolicy }}
@@ -111,6 +117,50 @@ spec:
             - name: oauth2
               containerPort: 4180
               protocol: TCP
+        {{- end }}
+
+        {{- if eq .Values.authProxy.provider "azureEasyAuth" }}
+        - name: easy-auth
+          image: {{ printf "%s:%s" .Values.authProxy.azureEasyAuth.image.repository .Values.authProxy.azureEasyAuth.image.tag | quote }}
+          imagePullPolicy: {{ .Values.authProxy.azureEasyAuth.image.pullPolicy }}
+          {{- if .Values.authProxy.azureEasyAuth.args }}
+          args:
+            {{- range .Values.authProxy.azureEasyAuth.args }}
+            - {{ . | quote }}
+            {{- end }}
+          {{- end }}
+          env:
+            {{- range $name, $value := .Values.authProxy.azureEasyAuth.env }}
+            - name: {{ $name | quote }}
+              value: {{ $value | quote }}
+            {{- end }}
+            - name: {{ .Values.authProxy.azureEasyAuth.secrets.clientSecretKey | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "authProxy.azureEasyAuth.secrets.existingSecretName is required" .Values.authProxy.azureEasyAuth.secrets.existingSecretName }}
+                  key: {{ .Values.authProxy.azureEasyAuth.secrets.clientSecretKey | quote }}
+            - name: {{ .Values.authProxy.azureEasyAuth.secrets.encryptionKeyKey | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "authProxy.azureEasyAuth.secrets.existingSecretName is required" .Values.authProxy.azureEasyAuth.secrets.existingSecretName }}
+                  key: {{ .Values.authProxy.azureEasyAuth.secrets.encryptionKeyKey | quote }}
+            - name: {{ .Values.authProxy.azureEasyAuth.secrets.signingKeyKey | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "authProxy.azureEasyAuth.secrets.existingSecretName is required" .Values.authProxy.azureEasyAuth.secrets.existingSecretName }}
+                  key: {{ .Values.authProxy.azureEasyAuth.secrets.signingKeyKey | quote }}
+          ports:
+            - name: easyauth
+              containerPort: 8000
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: easyauth-config
+              mountPath: /app/easyauth-config.json
+              subPath: {{ .Values.authProxy.azureEasyAuth.config.key | quote }}
+              readOnly: true
+        {{- end }}
 
         - name: ssh-bastion
           image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
@@ -132,11 +182,19 @@ spec:
             - name: SSHBASTION_DATA_DIR
               value: /data
             - name: SSHBASTION_AUTH_MODE
-              value: oauth2_proxy
+              value: {{ ternary "oauth2_proxy" "easy_auth" (eq .Values.authProxy.provider "oauth2Proxy") | quote }}
             - name: SSHBASTION_AUTH_USER_ID_HEADER
+              {{- if eq .Values.authProxy.provider "oauth2Proxy" }}
               value: X-Forwarded-User
+              {{- else }}
+              value: X-MS-CLIENT-PRINCIPAL-ID
+              {{- end }}
             - name: SSHBASTION_AUTH_EMAIL_HEADER
+              {{- if eq .Values.authProxy.provider "oauth2Proxy" }}
               value: X-Forwarded-Email
+              {{- else }}
+              value: X-MS-CLIENT-PRINCIPAL-NAME
+              {{- end }}
             - name: SSHBASTION_LOG_LEVEL
               value: {{ .Values.sshBastion.logLevel | quote }}
             - name: SSHBASTION_ROLE_DEFAULT
