@@ -1,0 +1,26 @@
+#!/bin/sh
+set -eu
+
+# Defense in depth:
+# - If sshd ends up using the user's login shell to start a session or run a
+#   forced command, do not allow arbitrary commands.
+# - If sshd uses ForceCommand, it will run this file.
+# - If sshd bypasses ForceCommand and uses the login shell, it will still run
+#   this file.
+# In both cases, ignore any arguments and use SSH_ORIGINAL_COMMAND only.
+
+cmd="${SSH_ORIGINAL_COMMAND:-}"
+case "$cmd" in
+	verify)
+		printf "%s\n" "OK: ssh-bastion authentication succeeded."
+		exit 0
+		;;
+	"")
+		printf "%s\n" "This is Kompox SSH Bastion. Use ssh -J / ProxyJump."
+		exit 0
+		;;
+	*)
+		printf "%s\n" "ERROR: unsupported command. Try: ssh jump@HOST verify"
+		exit 1
+		;;
+esac

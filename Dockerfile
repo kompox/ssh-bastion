@@ -22,6 +22,15 @@ WORKDIR /app
 COPY web/ /app/web/
 COPY --from=build /out/ssh-bastion /usr/local/bin/ssh-bastion
 COPY --chmod=755 docker/ssh-entrypoint.sh /usr/local/bin/ssh-entrypoint
+COPY --chmod=755 docker/ssh-bastion-shell /usr/local/bin/ssh-bastion-shell
+
+# Create the shared SSH user at build time so we don't need to edit /etc/passwd
+# at runtime. The shell is a wrapper that always runs the forcecommand script.
+RUN adduser -D -h /home/jump -s /usr/local/bin/ssh-bastion-shell jump
+
+# Ensure the account is not locked so sshd accepts publickey auth.
+RUN passwd -u jump >/dev/null 2>&1 || true \
+	&& passwd -d jump >/dev/null 2>&1 || true
 
 # Useful defaults for local testing
 ENV SSHBASTION_DATA_DIR=/data
