@@ -1,0 +1,83 @@
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: ghcr.io/kompox/ssh-bastion
+  tag: main
+  pullPolicy: IfNotPresent
+
+# Public hostname for web (used for oauth2-proxy redirect URL)
+host: ""
+
+persistence:
+  enabled: true
+  existingClaim: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+  storageClassName: ""
+
+service:
+  type: LoadBalancer
+  annotations: {}
+  ports:
+    ssh: 22
+    web: 80
+    websecure: 443
+
+ssh:
+  user: jump
+
+sshBastion:
+  logLevel: info
+  roleDefault: user
+  roleAdminIDs: ""
+  dns:
+    enabled: true
+    listenAddr: ":53"
+    # If empty, ssh-bastion auto-detects from /etc/resolv.conf
+    upstream: ""
+
+edgeProxy:
+  traefik:
+    image:
+      repository: traefik
+      tag: v3.1
+      pullPolicy: IfNotPresent
+    tls:
+      mode: letsEncrypt # letsEncrypt | secret
+      letsEncrypt:
+        email: ""
+        storage: /data/traefik/acme.json
+        caServer: ""
+      secret:
+        name: ""
+        crtKey: tls.crt
+        keyKey: tls.key
+
+authProxy:
+  oauth2Proxy:
+    image:
+      repository: quay.io/oauth2-proxy/oauth2-proxy
+      tag: v7.6.0
+      pullPolicy: IfNotPresent
+
+    oidc:
+      issuerURL: ""
+      clientID: ""
+      clientSecret:
+        existingSecretName: ""
+        key: client-secret
+
+    cookieSecret:
+      existingSecretName: ""
+      key: cookie-secret
+
+    # Common oauth2-proxy settings
+    emailDomains:
+      - "*"
+
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

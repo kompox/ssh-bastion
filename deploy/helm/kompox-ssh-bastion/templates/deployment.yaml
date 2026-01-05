@@ -1,0 +1,175 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kompox-ssh-bastion.fullname" . }}
+  labels:
+    {{- include "kompox-ssh-bastion.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/name: {{ include "kompox-ssh-bastion.name" . }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/name: {{ include "kompox-ssh-bastion.name" . }}
+    spec:
+      {{ $acmeStorage := .Values.edgeProxy.traefik.tls.letsEncrypt.storage }}
+      {{ $acmeDir := dir $acmeStorage }}
+      volumes:
+        - name: data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ default (include "kompox-ssh-bastion.fullname" .) .Values.persistence.existingClaim }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: traefik-dynamic
+          configMap:
+            name: {{ include "kompox-ssh-bastion.fullname" . }}-traefik-dynamic
+      {{- if eq .Values.edgeProxy.traefik.tls.mode "letsEncrypt" }}
+      initContainers:
+        - name: traefik-acme-init
+          image: busybox:1.36
+          command:
+            - sh
+            - -ec
+            - |
+              mkdir -p {{ $acmeDir | quote }}
+              touch {{ $acmeStorage | quote }}
+              chmod 600 {{ $acmeStorage | quote }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      {{- end }}
+      containers:
+        - name: traefik
+          image: {{ printf "%s:%s" .Values.edgeProxy.traefik.image.repository .Values.edgeProxy.traefik.image.tag | quote }}
+          imagePullPolicy: {{ .Values.edgeProxy.traefik.image.pullPolicy }}
+          args:
+            - --entrypoints.web.address=:80
+            - --entrypoints.websecure.address=:443
+            - --entrypoints.web.http.redirections.entrypoint.to=websecure
+            - --entrypoints.web.http.redirections.entrypoint.scheme=https
+            - --providers.file.directory=/etc/traefik/dynamic
+            - --providers.file.watch=true
+            - --api.dashboard=false
+            - --log.level=INFO
+            {{- if eq .Values.edgeProxy.traefik.tls.mode "letsEncrypt" }}
+            - --certificatesresolvers.le.acme.tlschallenge=true
+            - --certificatesresolvers.le.acme.email={{ required "edgeProxy.traefik.tls.letsEncrypt.email is required" .Values.edgeProxy.traefik.tls.letsEncrypt.email }}
+            - --certificatesresolvers.le.acme.storage={{ .Values.edgeProxy.traefik.tls.letsEncrypt.storage }}
+            {{- if .Values.edgeProxy.traefik.tls.letsEncrypt.caServer }}
+            - --certificatesresolvers.le.acme.caserver={{ .Values.edgeProxy.traefik.tls.letsEncrypt.caServer }}
+            {{- end }}
+            {{- end }}
+          ports:
+            - name: web
+              containerPort: 80
+              protocol: TCP
+            - name: websecure
+              containerPort: 443
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: traefik-dynamic
+              mountPath: /etc/traefik/dynamic
+              readOnly: true
+
+        - name: oauth2-proxy
+          image: {{ printf "%s:%s" .Values.authProxy.oauth2Proxy.image.repository .Values.authProxy.oauth2Proxy.image.tag | quote }}
+          imagePullPolicy: {{ .Values.authProxy.oauth2Proxy.image.pullPolicy }}
+          env:
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "authProxy.oauth2Proxy.oidc.clientSecret.existingSecretName is required" .Values.authProxy.oauth2Proxy.oidc.clientSecret.existingSecretName }}
+                  key: {{ .Values.authProxy.oauth2Proxy.oidc.clientSecret.key | quote }}
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "authProxy.oauth2Proxy.cookieSecret.existingSecretName is required" .Values.authProxy.oauth2Proxy.cookieSecret.existingSecretName }}
+                  key: {{ .Values.authProxy.oauth2Proxy.cookieSecret.key | quote }}
+          args:
+            - --provider=oidc
+            - --http-address=0.0.0.0:4180
+            - --upstream=http://127.0.0.1:8080/
+            - --reverse-proxy=true
+            - --pass-user-headers=true
+            - --email-domain={{ join "," .Values.authProxy.oauth2Proxy.emailDomains }}
+            - --oidc-issuer-url={{ required "authProxy.oauth2Proxy.oidc.issuerURL is required" .Values.authProxy.oauth2Proxy.oidc.issuerURL }}
+            - --client-id={{ required "authProxy.oauth2Proxy.oidc.clientID is required" .Values.authProxy.oauth2Proxy.oidc.clientID }}
+            - --redirect-url=https://{{ required "host is required" .Values.host }}/oauth2/callback
+            - --cookie-secure=true
+            - --cookie-httponly=true
+          ports:
+            - name: oauth2
+              containerPort: 4180
+              protocol: TCP
+
+        - name: ssh-bastion
+          image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /usr/local/bin/ssh-bastion
+          args:
+            - serve
+            - -http-addr
+            - :8080
+            - -dns={{ ternary "true" "false" .Values.sshBastion.dns.enabled }}
+            - -dns-addr
+            - {{ .Values.sshBastion.dns.listenAddr | quote }}
+            {{- if .Values.sshBastion.dns.upstream }}
+            - -dns-upstream
+            - {{ .Values.sshBastion.dns.upstream | quote }}
+            {{- end }}
+          env:
+            - name: SSHBASTION_DATA_DIR
+              value: /data
+            - name: SSHBASTION_AUTH_MODE
+              value: oauth2_proxy
+            - name: SSHBASTION_AUTH_USER_ID_HEADER
+              value: X-Forwarded-User
+            - name: SSHBASTION_AUTH_EMAIL_HEADER
+              value: X-Forwarded-Email
+            - name: SSHBASTION_LOG_LEVEL
+              value: {{ .Values.sshBastion.logLevel | quote }}
+            - name: SSHBASTION_ROLE_DEFAULT
+              value: {{ .Values.sshBastion.roleDefault | quote }}
+            - name: SSHBASTION_ROLE_ADMIN_IDS
+              value: {{ .Values.sshBastion.roleAdminIDs | quote }}
+          ports:
+            - name: app
+              containerPort: 8080
+              protocol: TCP
+            - name: dns
+              containerPort: 53
+              protocol: UDP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+
+        - name: sshd
+          image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /usr/local/bin/ssh-entrypoint
+          env:
+            - name: SSHBASTION_DATA_DIR
+              value: /data
+            - name: SSHBASTION_SSHD_NAMESERVER
+              value: 127.0.0.1
+            - name: SSHBASTION_SSHD_LOG_LEVEL
+              value: VERBOSE
+          ports:
+            - name: ssh
+              containerPort: 22
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data

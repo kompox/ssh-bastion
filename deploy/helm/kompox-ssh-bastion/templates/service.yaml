@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kompox-ssh-bastion.fullname" . }}
+  labels:
+    {{- include "kompox-ssh-bastion.labels" . | nindent 4 }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/name: {{ include "kompox-ssh-bastion.name" . }}
+  ports:
+    - name: ssh
+      port: {{ .Values.service.ports.ssh }}
+      targetPort: 22
+      protocol: TCP
+    - name: websecure
+      port: {{ .Values.service.ports.websecure }}
+      targetPort: 443
+      protocol: TCP

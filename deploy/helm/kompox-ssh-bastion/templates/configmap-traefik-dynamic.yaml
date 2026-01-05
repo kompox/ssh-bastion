@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kompox-ssh-bastion.fullname" . }}-traefik-dynamic
+  labels:
+    {{- include "kompox-ssh-bastion.labels" . | nindent 4 }}
+data:
+  dynamic.yml: |
+    http:
+      routers:
+        oauth2:
+          rule: Host(`{{ required "host is required" .Values.host }}`) && PathPrefix(`/oauth2`)
+          entryPoints:
+            - websecure
+          tls:
+            certResolver: le
+          service: oauth2-proxy
+
+        app:
+          rule: Host(`{{ required "host is required" .Values.host }}`) && PathPrefix(`/`)
+          entryPoints:
+            - websecure
+          tls:
+            certResolver: le
+          service: oauth2-proxy
+
+      services:
+        oauth2-proxy:
+          loadBalancer:
+            servers:
+              - url: http://127.0.0.1:4180
+
+        ssh-bastion:
+          loadBalancer:
+            servers:
+              - url: http://127.0.0.1:8080

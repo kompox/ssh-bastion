@@ -3,7 +3,7 @@ id: task-20260104i-k8s-manifests-helm
 title: Kubernetes: manifests / Helm
 titleJa: Kubernetes: manifests / Helm
 status: in-progress
-updated: 2026-01-04T22:59:11Z
+updated: 2026-01-05T11:52:10Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 
@@ -46,17 +46,18 @@ Publish chart name: `kompox-ssh-bastion` (avoid collisions with existing `ssh-ba
 
 ## Plan & Checklist
 
-- [ ] 1) Confirm Helm chart (no plain manifests)
-- [ ] 2) Initialize chart skeleton at `charts/kompox-ssh-bastion/` (start with `Chart.yaml`)
-- [ ] 3) Define Pod topology: `sshd`, `ssh-bastion`, `traefik`, auth proxy
-- [ ] 4) Decide auth proxy: oauth2-proxy vs `mcr.microsoft.com/appsvc/middleware:stage6`
-- [ ] 5) Define Traefik TLS sources and configuration (Let's Encrypt + Azure Key Vault CSI)
-- [ ] 6) Define `values.yaml` switches:
+- [x] 1) Confirm Helm chart (no plain manifests)
+- [x] 2) Initialize chart skeleton at `deploy/helm/kompox-ssh-bastion/` (start with `Chart.yaml`)
+- [x] 3) Define Pod topology: `sshd`, `ssh-bastion`, `traefik`, auth proxy
+- [x] 4) Define auth proxy: oauth2-proxy `quay.io/oauth2-proxy/oauth2-proxy:latest`
+- [ ] 5) Define auth proxy: Azure Easy Auth `mcr.microsoft.com/appsvc/middleware:stage6`
+- [ ] 6) Define Traefik TLS sources and configuration (Let's Encrypt + Azure Key Vault CSI)
+- [ ] 7) Define `values.yaml` switches:
   - `traefik.tls.mode`: `letsEncrypt` | `secret`
   - `authProxy.provider`: `oauth2Proxy` | `azureEasyAuth`
-- [ ] 7) Add Service(s) and IngressRoute/Ingress (web)
-- [ ] 8) Add probes and securityContext
-- [ ] 9) Add minimal documentation (how to apply)
+- [ ] 8) Add Service(s) and IngressRoute/Ingress (web)
+- [ ] 9) Add probes and securityContext
+- [ ] 10) Add minimal documentation (how to apply)
 
 ## Progress
 
@@ -71,6 +72,9 @@ Publish chart name: `kompox-ssh-bastion` (avoid collisions with existing `ssh-ba
 
 - 2026-01-04T22:59:11Z
   - Decided chart publication name: `kompox-ssh-bastion`; plan to create `charts/kompox-ssh-bastion/Chart.yaml` first
+
+- 2026-01-05T11:52:10Z
+  - Updated repo layout so the Helm chart lives at `deploy/helm/kompox-ssh-bastion/` (moved from `charts/kompox-ssh-bastion/`) and updated docs/scripts accordingly
 
 ## References
 

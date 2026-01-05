@@ -1,26 +1,20 @@
 #!/bin/sh
-set -eu
 
-# Defense in depth:
-# - If sshd ends up using the user's login shell to start a session or run a
-#   forced command, do not allow arbitrary commands.
-# - If sshd uses ForceCommand, it will run this file.
-# - If sshd bypasses ForceCommand and uses the login shell, it will still run
-#   this file.
-# In both cases, ignore any arguments and use SSH_ORIGINAL_COMMAND only.
+# Restricted login shell for the SSH bastion user.
+#
+# This script is used as the user's login shell to prevent interactive access
+# and to avoid executing arbitrary commands.
+#
+# Notes:
+# - It prints a short, human-readable status block and exits.
+# - `SSH_ORIGINAL_COMMAND` (when present) is the remote command string requested
+#   by the SSH client (e.g. `ssh jump@host <command>`). It is a raw string and
+#   is shown for diagnostics only (never executed).
+# - `SSH_CONNECTION` (when present) contains client/server addresses and ports.
 
-cmd="${SSH_ORIGINAL_COMMAND:-}"
-case "$cmd" in
-	verify)
-		printf "%s\n" "OK: ssh-bastion authentication succeeded."
-		exit 0
-		;;
-	"")
-		printf "%s\n" "This is Kompox SSH Bastion. Use ssh -J / ProxyJump."
-		exit 0
-		;;
-	*)
-		printf "%s\n" "ERROR: unsupported command. Try: ssh jump@HOST verify"
-		exit 1
-		;;
-esac
+cat <<EOF
+This is Kompox SSH Bastion.  Use ssh -J / ProxyJump.
+User:       ${LOGNAME:-${USER:-jump}}
+Connection: ${SSH_CONNECTION:-<none>}
+Command:    ${SSH_ORIGINAL_COMMAND:-<none>}
+EOF
