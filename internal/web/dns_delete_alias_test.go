@@ -47,8 +47,8 @@ func TestDeleteAlias_MissingAlias_RendersPageWithError(t *testing.T) {
 		t.Fatalf("expected 400; got %d", res.Code)
 	}
 	body := res.Body.String()
-	if !strings.Contains(body, "<h1>DNS Aliases</h1>") {
-		t.Fatalf("expected DNS page HTML; got: %s", body)
+	if !strings.Contains(body, "<h1>DNS Aliases (") {
+		t.Fatalf("expected page to include title with restriction status; got body: %s", body)
 	}
 	if !strings.Contains(body, "class=\"flash flash-warning\"") {
 		t.Fatalf("expected flash warning banner; got: %s", body)

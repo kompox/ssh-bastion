@@ -2,8 +2,7 @@
 id: design-containers
 title: Containers (image + runtime topology)
 status: draft
-updated: 2026-01-04T09:09:31Z
-updated: 2026-01-04T09:24:31Z
+updated: 2026-01-05T23:30:13Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Containers (image + runtime topology)
@@ -133,7 +132,9 @@ This section consolidates the DNS resolver routing design for both supported env
 
 ### Design intent
 
-- The DNS proxy answers configured CNAME-like aliases and forwards everything else to an upstream resolver.
+- The DNS proxy answers configured CNAME-like aliases.
+  - By default it forwards non-aliased `A`/`AAAA` queries to an upstream resolver.
+  - If `SSHBASTION_DNS_ALIASES_ONLY` is enabled, non-aliased `A`/`AAAA` queries return NXDOMAIN.
 - Only the `sshd` container is expected to use the DNS proxy as its resolver (`127.0.0.1:53`).
 - The `ssh-bastion` container should keep the platform-default resolver so it can resolve upstream names without recursion.
 

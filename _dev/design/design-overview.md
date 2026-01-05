@@ -2,7 +2,7 @@
 id: design-overview
 title: Kompox ssh-bastion design overview
 status: stable
-updated: 2026-01-04T18:26:24Z
+updated: 2026-01-05T23:30:13Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Kompox ssh-bastion design overview
@@ -246,6 +246,10 @@ Each environment variable below states which role/container it configures.
 - `SSHBASTION_DNS_UPSTREAM`
   - Default: (empty)
   - Purpose: DNS proxy upstream resolver (`host:port`). Used when `-dns-upstream` is not set; otherwise it auto-detects from `/etc/resolv.conf`.
+  - Applies to: **ssh-bastion**
+- `SSHBASTION_DNS_ALIASES_ONLY`
+  - Default: `false`
+  - Purpose: when enabled, the DNS proxy answers only configured aliases and returns NXDOMAIN for other `A`/`AAAA` queries.
   - Applies to: **ssh-bastion**
 - `SSHBASTION_LOG_LEVEL`
   - Values: `error` | `warn` | `info` | `debug`

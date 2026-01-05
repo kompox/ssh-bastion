@@ -20,6 +20,7 @@ type Config struct {
 	OverrideEmail  string
 	RoleDefault    string
 	RoleAdminIDs   map[string]struct{}
+	DNSAliasesOnly bool
 }
 
 type LogLevel int
@@ -93,7 +94,18 @@ func Load() (*Config, error) {
 		cfg.RoleAdminIDs[id] = struct{}{}
 	}
 
+	cfg.DNSAliasesOnly = parseBoolEnv(getEnv("SSHBASTION_DNS_ALIASES_ONLY", ""))
+
 	return cfg, nil
+}
+
+func parseBoolEnv(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "yes", "y", "on", "enabled":
+		return true
+	default:
+		return false
+	}
 }
 
 func splitCommaSeparated(value string) []string {

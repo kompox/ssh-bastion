@@ -156,6 +156,12 @@ func (s *Server) forward(in *mdns.Msg) (*mdns.Msg, error) {
 	}
 
 	if strings.TrimSpace(dest) == "" {
+		if s.cfg != nil && s.cfg.DNSAliasesOnly {
+			m := new(mdns.Msg)
+			m.SetReply(in)
+			m.Rcode = mdns.RcodeNameError
+			return m, nil
+		}
 		out, _, err := s.client.Exchange(in, s.upstream)
 		return out, err
 	}

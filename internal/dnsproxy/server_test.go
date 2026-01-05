@@ -141,6 +141,62 @@ func TestDoesNotRewriteNonAddressQueries(t *testing.T) {
 	}
 }
 
+func TestAliasesOnly_ReturnsNXDOMAINForNonAliasAQuery(t *testing.T) {
+	dataDir := t.TempDir()
+	os.Setenv("SSHBASTION_DATA_DIR", dataDir)
+	os.Setenv("SSHBASTION_DNS_ALIASES_ONLY", "true")
+	t.Cleanup(func() {
+		_ = os.Unsetenv("SSHBASTION_DATA_DIR")
+		_ = os.Unsetenv("SSHBASTION_DNS_ALIASES_ONLY")
+	})
+
+	store := storage.New(dataDir)
+	reg := dns.NewRegistry(store)
+	if err := reg.AddAlias("hoge.local", "example.com"); err != nil {
+		t.Fatalf("add alias: %v", err)
+	}
+
+	// Upstream: should not be used for non-aliased queries in aliases-only mode.
+	upstreamAddr, stopUpstream := startUDPUpstream(t, func(w mdns.ResponseWriter, r *mdns.Msg) {
+		m := new(mdns.Msg)
+		m.SetRcode(r, mdns.RcodeServerFailure)
+		_ = w.WriteMsg(m)
+	})
+	t.Cleanup(stopUpstream)
+
+	proxy, err := New(Options{ListenAddr: "127.0.0.1:0", Upstream: upstreamAddr, Timeout: 1 * time.Second})
+	if err != nil {
+		t.Fatalf("new proxy: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	errCh := make(chan error, 1)
+	go func() { errCh <- proxy.Serve(ctx) }()
+	t.Cleanup(func() {
+		cancel()
+		_ = <-errCh
+	})
+
+	addr := waitForLocalAddr(t, proxy)
+
+	c := &mdns.Client{Net: "udp", Timeout: 1 * time.Second}
+	msg := new(mdns.Msg)
+	msg.SetQuestion(mdns.Fqdn("not-alias.local"), mdns.TypeA)
+
+	resp, _, err := c.Exchange(msg, addr)
+	if err != nil {
+		t.Fatalf("exchange: %v", err)
+	}
+	if resp == nil {
+		t.Fatalf("nil response")
+	}
+	if resp.Rcode != mdns.RcodeNameError {
+		t.Fatalf("expected NXDOMAIN for non-aliased A query, got rcode=%d", resp.Rcode)
+	}
+}
+
 func waitForLocalAddr(t *testing.T, s *Server) string {
 	t.Helper()
 

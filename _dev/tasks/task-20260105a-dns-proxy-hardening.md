@@ -1,8 +1,8 @@
 ---
 id: task-20260105a-dns-proxy-hardening
 title: Security - DNS proxy hardening
-status: in-progress
-updated: 2026-01-05T23:23:25Z
+status: done
+updated: 2026-01-05T23:54:48Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 
@@ -17,13 +17,13 @@ Add configuration to restrict DNS proxy resolution to configured aliases only (r
 
 ## Plan & Checklist
 
-- [ ] Finalize spec in this task file (no implementation before this)
-- [ ] Review current DNS proxy behavior for non-aliased queries
-- [ ] Decide configuration surface (env var) and defaults
-- [ ] Implement allowlist-only behavior when enabled
-- [ ] Add/update unit tests for NXDOMAIN behavior
-- [ ] Update design docs (at least: `_dev/design/design-app-dns.md`, `_dev/design/design-overview.md`, `_dev/design/design-containers.md`)
-- [ ] Update testing docs if needed (e.g. `_dev/design/design-app-testing.md`)
+- [x] Finalize spec in this task file (no implementation before this)
+- [x] Review current DNS proxy behavior for non-aliased queries
+- [x] Decide configuration surface (env var) and defaults
+- [x] Implement allowlist-only behavior when enabled
+- [x] Add/update unit tests for NXDOMAIN behavior
+- [x] Update design docs (at least: `_dev/design/design-app-dns.md`, `_dev/design/design-overview.md`, `_dev/design/design-containers.md`)
+- [x] Update testing docs if needed (e.g. `_dev/design/design-app-testing.md`)
 - [ ] Update `README.md` if needed
 
 ## Specification
@@ -51,6 +51,20 @@ Add configuration to restrict DNS proxy resolution to configured aliases only (r
 
 - 2026-01-05T23:22:22Z
 	- Added “finalize spec before coding” gate, expanded doc-update checklist, and specified admin UI status display (no toggle)
+
+- 2026-01-05T23:29:07Z
+	- Implemented `SSHBASTION_DNS_ALIASES_ONLY` config parsing and aliases-only DNS behavior (NXDOMAIN for non-aliased A/AAAA)
+	- Admin UI: `/admin/dns` title shows restriction status (`aliases-only` vs `unrestricted`)
+	- Verified `make test`
+
+- 2026-01-05T23:31:46Z
+	- Updated design docs to include `SSHBASTION_DNS_ALIASES_ONLY` in configuration lists and describe its behavior
+
+- 2026-01-05T23:35:24Z
+	- Updated checklist to reflect completed implementation, tests, and design-doc updates
+
+- 2026-01-05T23:54:48Z
+	- Marked task as done
 
 ## References
 

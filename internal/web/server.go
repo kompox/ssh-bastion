@@ -612,6 +612,11 @@ func (s *Server) renderAdminDNSPage(w http.ResponseWriter, r *http.Request, stat
 		flashKind = "error"
 	}
 
+	restrictionStatus := "unrestricted"
+	if s != nil && s.cfg != nil && s.cfg.DNSAliasesOnly {
+		restrictionStatus = "aliases-only"
+	}
+
 	aliases := []dns.Alias{}
 	if s.dnsRegistry != nil {
 		var err error
@@ -633,7 +638,7 @@ func (s *Server) renderAdminDNSPage(w http.ResponseWriter, r *http.Request, stat
 	}
 
 	data := map[string]interface{}{
-		"Title":           "DNS Aliases",
+		"Title":           fmt.Sprintf("DNS Aliases (%s)", restrictionStatus),
 		"Email":           email,
 		"Role":            role,
 		"AuthMode":        s.templateAuthMode(),

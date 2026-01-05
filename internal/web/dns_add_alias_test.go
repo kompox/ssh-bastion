@@ -57,8 +57,8 @@ func TestAddAlias_DuplicateSource_RendersPageWithError(t *testing.T) {
 		t.Fatalf("expected 400; got %d", res.Code)
 	}
 	body := res.Body.String()
-	if !strings.Contains(body, "<h1>DNS Aliases</h1>") {
-		t.Fatalf("expected DNS page HTML; got: %s", body)
+	if !strings.Contains(body, "<h1>DNS Aliases (") {
+		t.Fatalf("expected page to include title with restriction status; got body: %s", body)
 	}
 	if !strings.Contains(body, "class=\"flash flash-error\"") {
 		t.Fatalf("expected flash error banner; got: %s", body)
@@ -112,8 +112,8 @@ func TestAddAlias_InvalidDNS1123_RendersPageWithError(t *testing.T) {
 		t.Fatalf("expected 400; got %d", res.Code)
 	}
 	body := res.Body.String()
-	if !strings.Contains(body, "<h1>DNS Aliases</h1>") {
-		t.Fatalf("expected DNS page HTML; got: %s", body)
+	if !strings.Contains(body, "<h1>DNS Aliases (") {
+		t.Fatalf("expected page to include title with restriction status; got body: %s", body)
 	}
 	if !strings.Contains(body, "class=\"flash flash-error\"") {
 		t.Fatalf("expected flash error banner; got: %s", body)

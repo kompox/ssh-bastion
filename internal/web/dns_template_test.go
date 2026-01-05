@@ -20,7 +20,7 @@ func TestDnsTemplate_URLencodesSourceInDeleteAction(t *testing.T) {
 	// DNS-1123-valid source.
 	source := "foo-bar.example.com"
 	data := map[string]any{
-		"Title":    "DNS Aliases",
+		"Title":    "DNS Aliases (unrestricted)",
 		"Email":    "test@example.com",
 		"AuthMode": "oauth2_proxy",
 		"Page":     "admin_dns",

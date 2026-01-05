@@ -2,7 +2,7 @@
 id: design-app-testing
 title: App Testing (HTTP + DNS)
 status: stable
-updated: 2026-01-04T19:04:10Z
+updated: 2026-01-05T23:30:13Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # App Testing (HTTP + DNS)
@@ -63,6 +63,8 @@ It starts `./ssh-bastion serve` with:
   - DNS: `:5353/udp` (Query via `dig @localhost -p 5353 example.com A +short`)
 - DNS upstream: auto-detected from `/etc/resolv.conf`
   - `SSHBASTION_DNS_UPSTREAM=$(DNS_UPSTREAM)` (default: empty)
+- Optional DNS hardening:
+  - `SSHBASTION_DNS_ALIASES_ONLY=false` (set to `true` to return NXDOMAIN for non-aliased A/AAAA queries)
 - Data directory: `_tmp/data`
   - `SSHBASTION_DATA_DIR=$(DATA_DIR)` (default: `_tmp/data`)
   - Expected on-disk outputs: see [design-overview] (Storage layout section).
@@ -194,6 +196,7 @@ Expected: no `A` answer is returned.
 | `SSHBASTION_ROLE_DEFAULT` | `user` | `user` | Default role (set to `admin` to access `/admin/*`) |
 | `SSHBASTION_ROLE_ADMIN_IDS` | (empty) | (empty) | Comma-separated admin user IDs (alternative to `SSHBASTION_ROLE_DEFAULT=admin`) |
 | `SSHBASTION_DNS_UPSTREAM` | (optional; from `/etc/resolv.conf`) | (optional; from `/etc/resolv.conf`) | DNS proxy upstream resolver (e.g. `127.0.0.11:53` in Docker) |
+| `SSHBASTION_DNS_ALIASES_ONLY` | `false` | `false` | When `true`, DNS proxy answers aliases only; other A/AAAA queries return NXDOMAIN |
 
 ## References
 

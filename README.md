@@ -11,6 +11,7 @@ Shared SSH bastion (OpenSSH `-J` / `ProxyJump` compatible) behind a single publi
 - In-app DNS proxy (bastion-local) for “CNAME-like” aliasing:
     - Example: resolve `gitea1.example.com` to `gitea1.gitea1.svc.cluster.local` only inside the bastion.
     - Keeps A/AAAA dynamic (does not pin IPs), so Kubernetes Service endpoints can change without updating clients.
+    - Optional hardening: return NXDOMAIN for non-aliased A/AAAA queries (default: unrestricted).
 
 ## Example use case: Gitea sites on Kubernetes
 

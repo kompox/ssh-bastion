@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-05T23:10:08Z
+updated: 2026-01-05T23:54:48Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -21,11 +21,6 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
   - SecurityContext with minimal capabilities (likely `CAP_NET_BIND_SERVICE` for ports 22/53)
 - Chart name: `kompox-ssh-bastion` (avoid collisions with existing `ssh-bastion` charts)
 - Task: [task-20260104i-k8s-manifests-helm](../tasks/task-20260104i-k8s-manifests-helm.md)
-
-### Security: DNS proxy hardening
-
-- Add settings to restrict DNS proxy resolution to configured aliases only (return NXDOMAIN for all other queries).
-- Task: [task-20260105a-dns-proxy-hardening](../tasks/task-20260105a-dns-proxy-hardening.md)
 
 ## TODO
 
@@ -49,6 +44,13 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 - Decide and document mitigation for `known_hosts` collisions when the same FQDN is reachable externally
 
 ## DONE
+
+### Security: DNS proxy hardening
+
+- Added `SSHBASTION_DNS_ALIASES_ONLY` setting to restrict DNS proxy resolution to configured aliases only.
+- When enabled: return NXDOMAIN for non-aliased A/AAAA queries.
+- Admin UI: `/admin/dns` displays status in the page title (display-only; no toggle).
+- Task: [task-20260105a-dns-proxy-hardening](../tasks/task-20260105a-dns-proxy-hardening.md)
 
 ### Docs: README.md
 

@@ -2,8 +2,7 @@
 id: design-app-dns
 title: App DNS (in-process DNS proxy)
 status: draft
-updated: 2026-01-04T09:09:31Z
-updated: 2026-01-04T09:24:31Z
+updated: 2026-01-05T23:30:13Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: App DNS (in-process DNS proxy)
@@ -113,7 +112,9 @@ Rationale: aliases are intended to make SSH-style `A/AAAA` name resolution relia
 
 For a single-question DNS query:
 
-1. If QNAME does not match any configured alias source: forward the query unchanged to the upstream resolver.
+1. If QNAME does not match any configured alias source:
+  - If `SSHBASTION_DNS_ALIASES_ONLY` is enabled, return NXDOMAIN.
+  - Otherwise, forward the query unchanged to the upstream resolver.
 2. If QNAME matches an alias source:
    - Rewrite QNAME to the alias destination.
    - Forward to the upstream resolver.
