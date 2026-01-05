@@ -3,7 +3,7 @@ id: task-20260104i-k8s-manifests-helm
 title: Kubernetes: manifests / Helm
 titleJa: Kubernetes: manifests / Helm
 status: in-progress
-updated: 2026-01-05T19:16:12Z
+updated: 2026-01-05T21:20:01Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 
@@ -50,10 +50,10 @@ Publish chart name: `kompox-ssh-bastion` (avoid collisions with existing `ssh-ba
 - [x] Initialize chart skeleton at `deploy/helm/kompox-ssh-bastion/` (start with `Chart.yaml`)
 - [x] Define Pod topology: `sshd`, `ssh-bastion`, `traefik`, auth proxy
 - [x] Define auth proxy: oauth2-proxy `quay.io/oauth2-proxy/oauth2-proxy:latest`
-- [ ] Define auth proxy: Azure Easy Auth `mcr.microsoft.com/appsvc/middleware:stage6`
+- [x] Define auth proxy: Azure Easy Auth `mcr.microsoft.com/appsvc/middleware:stage6`
 - [x] Add design doc for auth proxy containers (`design-auth-proxy`)
 - [ ] Define Traefik TLS sources and configuration (Let's Encrypt + Azure Key Vault CSI)
-- [ ] Define `values.yaml` switches:
+- [x] Define `values.yaml` switches:
   - `traefik.tls.mode`: `letsEncrypt` | `secret`
   - `authProxy.provider`: `oauth2Proxy` | `azureEasyAuth`
 - [ ] Add Service(s) and IngressRoute/Ingress (web)
@@ -79,6 +79,18 @@ Publish chart name: `kompox-ssh-bastion` (avoid collisions with existing `ssh-ba
 
 - 2026-01-05T19:15:19Z
   - Added [design-auth-proxy] to document auth proxy container configuration (oauth2-proxy and Azure Easy Auth) for Helm and Compose
+
+- 2026-01-05T20:16:01Z
+  - Fixed Azure Easy Auth middleware startup by passing required Host.* settings via command-line args (e.g. `/Host.DestinationHostUrl=...`) instead of env vars
+
+- 2026-01-05T20:41:52Z
+  - Added a per-auth-mode "Sign Out" link in the web UI header (`easy_auth` and `oauth2_proxy`), and updated templates to receive `AuthMode`
+
+- 2026-01-05T20:53:03Z
+  - Changed ssh-bastion defaults for `oauth2_proxy` mode to read identity from `X-Forwarded-User` / `X-Forwarded-Email` and aligned design docs
+
+- 2026-01-05T21:20:01Z
+  - Updated [design-k8s-helm] Quickstart to include both `oauth2_proxy` and `easy_auth` sections, and always use Let’s Encrypt staging `caServer`
 
 ## References
 

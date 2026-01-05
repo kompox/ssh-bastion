@@ -169,8 +169,8 @@ Default header mapping:
   - User ID header: `X-MS-CLIENT-PRINCIPAL-ID`
   - Email header: `X-MS-CLIENT-PRINCIPAL-NAME`
 - oauth2-proxy
-  - User ID header: `X-Auth-Request-User`
-  - Email header: `X-Auth-Request-Email`
+  - User ID header: `X-Forwarded-User`
+  - Email header: `X-Forwarded-Email`
 
 Request handling rule:
 
@@ -219,11 +219,11 @@ Each environment variable below states which role/container it configures.
   - Purpose: selects default header mapping.
   - Applies to: **ssh-bastion**
 - `SSHBASTION_AUTH_USER_ID_HEADER`
-  - Default: `X-MS-CLIENT-PRINCIPAL-ID` (when `easy_auth`), `X-Auth-Request-User` (when `oauth2_proxy`)
+  - Default: `X-MS-CLIENT-PRINCIPAL-ID` (when `easy_auth`), `X-Forwarded-User` (when `oauth2_proxy`)
   - Purpose: request header name containing the stable user ID.
   - Applies to: **ssh-bastion**
 - `SSHBASTION_AUTH_EMAIL_HEADER`
-  - Default: `X-MS-CLIENT-PRINCIPAL-NAME` (when `easy_auth`), `X-Auth-Request-Email` (when `oauth2_proxy`)
+  - Default: `X-MS-CLIENT-PRINCIPAL-NAME` (when `easy_auth`), `X-Forwarded-Email` (when `oauth2_proxy`)
   - Purpose: request header name containing the user email (UI display only).
   - Applies to: **ssh-bastion**
 - `SSHBASTION_AUTH_OVERRIDE_USER_ID`

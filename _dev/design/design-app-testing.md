@@ -187,8 +187,8 @@ Expected: no `A` answer is returned.
 |----------|---------------------|------------------------|-------------|
 | `SSHBASTION_DATA_DIR` | `/data` | `/data` | Root directory for file storage |
 | `SSHBASTION_AUTH_MODE` | `easy_auth` | - | Authentication mode |
-| `SSHBASTION_AUTH_USER_ID_HEADER` | `X-MS-CLIENT-PRINCIPAL-ID` | `X-Auth-Request-User` | Header containing user ID |
-| `SSHBASTION_AUTH_EMAIL_HEADER` | `X-MS-CLIENT-PRINCIPAL-NAME` | `X-Auth-Request-Email` | Header containing email |
+| `SSHBASTION_AUTH_USER_ID_HEADER` | `X-MS-CLIENT-PRINCIPAL-ID` | `X-Forwarded-User` | Header containing user ID |
+| `SSHBASTION_AUTH_EMAIL_HEADER` | `X-MS-CLIENT-PRINCIPAL-NAME` | `X-Forwarded-Email` | Header containing email |
 | `SSHBASTION_AUTH_OVERRIDE_USER_ID` | (empty) | (empty) | TEST MODE: override user ID (ignores headers) |
 | `SSHBASTION_AUTH_OVERRIDE_EMAIL` | (empty) | (empty) | TEST MODE: override email (ignores headers) |
 | `SSHBASTION_ROLE_DEFAULT` | `user` | `user` | Default role (set to `admin` to access `/admin/*`) |

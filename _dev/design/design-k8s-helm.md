@@ -2,7 +2,7 @@
 id: design-k8s-helm
 title: Kubernetes packaging (Helm)
 status: draft
-updated: 2026-01-05T17:26:11Z
+updated: 2026-01-05T21:17:35Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Kubernetes packaging (Helm)
@@ -44,9 +44,9 @@ You will need values for:
 
 - public host name for the admin UI
 - TLS (Let’s Encrypt email, if using TLS-ALPN-01)
-- OIDC (issuer URL + client credentials)
+- either oauth2-proxy OIDC settings, or Azure Easy Auth settings
 
-Steps:
+### Common
 
 1. **Pick a namespace and release name**
 
@@ -55,14 +55,28 @@ Steps:
     - Namespace: `ssh-bastion`
     - Release: `ssh-bastion`
 
-2. **Create Kubernetes Secrets for oauth2-proxy**
-
-    Create a cookie secret and OIDC client credentials in the target namespace:
+2. **Create the namespace**
 
     ```bash
     NS=ssh-bastion
-    kubectl create namespace "$NS" --dry-run=client -o yaml | kubectl apply -f -
+    RELEASE=ssh-bastion
 
+    kubectl create namespace "$NS" --dry-run=client -o yaml | kubectl apply -f -
+    ```
+
+3. **Pick TLS settings (staging)**
+
+  In this doc, the examples always use Let’s Encrypt staging:
+
+  - `edgeProxy.traefik.tls.letsEncrypt.caServer=https://acme-staging-v02.api.letsencrypt.org/directory`
+
+### oauth2_proxy (oauth2-proxy)
+
+1. **Create Kubernetes Secrets for oauth2-proxy**
+
+    Create a cookie secret and OIDC client secret in the target namespace:
+
+    ```bash
     kubectl -n "$NS" create secret generic oauth2-proxy-secrets \
       --from-literal=cookie-secret="$(openssl rand -base64 32)" \
       --from-literal=client-secret="REPLACE_ME" \
@@ -73,37 +87,72 @@ Steps:
 
     - `issuerURL` should be the issuer base URL (not the `/.well-known/openid-configuration` URL).
 
-3. **Install (or upgrade) the chart from this repo**
+2. **Install (or upgrade) the chart**
 
     From the repository root:
 
     ```bash
-    NS=ssh-bastion
-    RELEASE=ssh-bastion
-
     helm upgrade --install "$RELEASE" deploy/helm/kompox-ssh-bastion \
       -n "$NS" \
       --create-namespace \
       --set host="bastion.example.com" \
       --set edgeProxy.traefik.tls.letsEncrypt.email="you@example.com" \
       --set edgeProxy.traefik.tls.letsEncrypt.caServer="https://acme-staging-v02.api.letsencrypt.org/directory" \
+      --set authProxy.provider=oauth2Proxy \
       --set authProxy.oauth2Proxy.oidc.issuerURL="https://issuer.example.com/" \
       --set authProxy.oauth2Proxy.oidc.clientID="REPLACE_ME" \
       --set authProxy.oauth2Proxy.oidc.clientSecret.existingSecretName="oauth2-proxy-secrets" \
       --set authProxy.oauth2Proxy.cookieSecret.existingSecretName="oauth2-proxy-secrets"
     ```
 
-4. **Verify**
+### easy_auth (Azure Easy Auth middleware)
+
+1. **Create Kubernetes Secrets for Easy Auth**
+
+    Create the Easy Auth secret (client secret + encryption/signing keys) in the target namespace:
 
     ```bash
-    kubectl -n ssh-bastion get pods
-    kubectl -n ssh-bastion get svc
+    kubectl -n "$NS" create secret generic ssh-bastion-easyauth-secrets \
+      --from-literal=MICROSOFT_PROVIDER_AUTHENTICATION_SECRET="REPLACE_ME" \
+      --from-literal=WEBSITE_AUTH_ENCRYPTION_KEY="$(openssl rand -hex 32)" \
+      --from-literal=WEBSITE_AUTH_SIGNING_KEY="$(openssl rand -hex 32)" \
+      --dry-run=client -o yaml | kubectl apply -f -
+    ```
+
+    Notes:
+
+    - If you leave `authProxy.azureEasyAuth.config.existingConfigMapName` and `authProxy.azureEasyAuth.config.inlineJSON` empty, the chart generates `easyauth-config.json` from `authProxy.azureEasyAuth.identity.*`.
+
+2. **Install (or upgrade) the chart**
+
+    From the repository root:
+
+    ```bash
+    helm upgrade --install "$RELEASE" deploy/helm/kompox-ssh-bastion \
+      -n "$NS" \
+      --create-namespace \
+      --set host="bastion.example.com" \
+      --set edgeProxy.traefik.tls.letsEncrypt.email="you@example.com" \
+      --set edgeProxy.traefik.tls.letsEncrypt.caServer="https://acme-staging-v02.api.letsencrypt.org/directory" \
+      --set authProxy.provider=azureEasyAuth \
+      --set authProxy.azureEasyAuth.identity.tenantID="REPLACE_ME" \
+      --set authProxy.azureEasyAuth.identity.clientID="REPLACE_ME" \
+      --set authProxy.azureEasyAuth.secrets.existingSecretName="ssh-bastion-easyauth-secrets"
+    ```
+
+### Verify
+
+1. **Verify resources**
+
+    ```bash
+    kubectl -n "$NS" get pods
+    kubectl -n "$NS" get svc
     ```
 
     If you don’t have external ingress/LB wiring yet, you can port-forward HTTP to confirm the app starts:
 
     ```bash
-    kubectl -n ssh-bastion port-forward svc/ssh-bastion 8443:443
+    kubectl -n "$NS" port-forward svc/${RELEASE}-kompox-ssh-bastion 8443:443
     ```
 
     Then open `https://localhost:8443/`.
@@ -156,8 +205,8 @@ The values contract is intentionally “small surface area”:
 
 - One externally meaningful host name is assumed for the admin UI.
 - The edge proxy is responsible for routing:
-  - `/oauth2/*` to the auth proxy (when using oauth2-proxy)
-  - `/*` to `ssh-bastion` (protected by forward auth)
+  - oauth2-proxy mode: route both `/oauth2/*` and `/*` to oauth2-proxy, which then proxies to ssh-bastion
+  - Azure Easy Auth mode: route `/*` to the Easy Auth middleware, which then proxies to ssh-bastion (`/.auth/*` is reserved by the middleware)
 
 ### TLS modes
 
@@ -172,9 +221,13 @@ Support (at minimum) these conceptual modes:
 
 The chart should be able to express at least:
 
-- **oauth2-proxy (OIDC)**: the default intended auth proxy for Kubernetes deployments.
+- **oauth2-proxy (OIDC)**
+- **Azure Easy Auth middleware**
 
-The application uses `SSHBASTION_AUTH_MODE=oauth2_proxy` when deployed behind oauth2-proxy.
+The chart sets the app auth mode and identity header mapping based on the selected auth proxy provider:
+
+- oauth2-proxy: `SSHBASTION_AUTH_MODE=oauth2_proxy` and `X-Forwarded-User` / `X-Forwarded-Email`
+- Azure Easy Auth: `SSHBASTION_AUTH_MODE=easy_auth` and `X-MS-CLIENT-PRINCIPAL-ID` / `X-MS-CLIENT-PRINCIPAL-NAME`
 
 ## Operational expectations
 

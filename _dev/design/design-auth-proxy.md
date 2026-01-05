@@ -2,7 +2,7 @@
 id: design-auth-proxy
 title: Auth proxy containers (oauth2-proxy / Azure Easy Auth)
 status: draft
-updated: 2026-01-05T18:33:05Z
+updated: 2026-01-05T20:43:36Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 
@@ -44,10 +44,12 @@ This design complements:
 
 Document what ssh-bastion expects from the proxy, and what the proxy must guarantee.
 
-- **Authenticated identity headers**: (TBD; list exact header names used by ssh-bastion)
+- **Authenticated identity headers**:
+  - oauth2-proxy: `X-Forwarded-User` and `X-Forwarded-Email` (enabled by oauth2-proxy `--pass-user-headers=true`)
+  - Azure Easy Auth middleware: `X-MS-CLIENT-PRINCIPAL-ID` and `X-MS-CLIENT-PRINCIPAL-NAME`
 - **Auth mode configuration**:
   - `SSHBASTION_AUTH_MODE=oauth2_proxy` when deployed behind oauth2-proxy
-  - (TBD) expected mode for Azure Easy Auth middleware
+  - `SSHBASTION_AUTH_MODE=easy_auth` when deployed behind Azure Easy Auth middleware
 - **Request routing**:
   - `/oauth2/*` (oauth2-proxy endpoints) routing rules (K8s/Compose)
   - `/*` to ssh-bastion (protected)
@@ -56,24 +58,54 @@ Document what ssh-bastion expects from the proxy, and what the proxy must guaran
 
 ### Container configuration
 
+- Provider: OIDC
 - OIDC issuer URL
 - Client ID / client secret
 - Cookie secret
-- Redirect URL and callback behavior
+- Redirect URL (must match the public host)
+
+oauth2-proxy listens on `:4180` and proxies to ssh-bastion at `http://127.0.0.1:8080/`.
+
+Paths reserved by oauth2-proxy:
+
+- `/oauth2/*` (login/callback/sign-out endpoints)
+
+Sign-out endpoint (used by the ssh-bastion UI header link in `oauth2_proxy` mode):
+
+- `/oauth2/sign_out?rd=/`
 
 ### Kubernetes (Helm)
 
-- Where secrets live (Kubernetes Secrets)
-- How values map to oauth2-proxy args/envs
-- How Traefik (or another edge proxy) routes:
-  - forward-auth / middleware configuration (TBD)
-  - `/oauth2/*` path routing (TBD)
+Traefik routing (current chart behavior):
+
+- `Host(<host>) && PathPrefix(/oauth2)` → oauth2-proxy (`http://127.0.0.1:4180`)
+- `Host(<host>) && PathPrefix(/)` → oauth2-proxy (`http://127.0.0.1:4180`)
+
+oauth2-proxy container settings (current chart behavior):
+
+- `--provider=oidc`
+- `--http-address=0.0.0.0:4180`
+- `--upstream=http://127.0.0.1:8080/`
+- `--reverse-proxy=true`
+- `--pass-user-headers=true` (emits `X-Forwarded-User` / `X-Forwarded-Email`)
+- `--oidc-issuer-url=<issuerURL>`
+- `--client-id=<clientID>`
+- `--redirect-url=https://<host>/oauth2/callback`
+- `--email-domain=*` (or configured domains)
+
+Secrets (via Kubernetes Secret refs):
+
+- OIDC client secret → `OAUTH2_PROXY_CLIENT_SECRET`
+- Cookie secret → `OAUTH2_PROXY_COOKIE_SECRET`
 
 ### Compose
 
-- Environment variables / volumes
-- How the reverse proxy routes to oauth2-proxy and ssh-bastion
-- Local testing notes (ports, callbacks)
+The same topology as Helm applies:
+
+- edge proxy terminates TLS and routes both `/oauth2/*` and `/*` to oauth2-proxy
+- oauth2-proxy proxies to ssh-bastion (upstream)
+
+Minimum required configuration is the same as the container configuration above.
 
 ## Azure Easy Auth middleware
 
@@ -91,15 +123,26 @@ Azure Easy Auth in SSH Bastion supports the following configuration:
   - -> traefik (0.0.0.0:443) -> easyauth (127.0.0.1:8000) -> ssh-bastion (127.0.0.1:8080)
   - -> sshd (0.0.0.0:22) -> ssh-bastion (127.0.0.1:53) 
 
-Variables (via K8s ConfigMap environment variables):
+Host settings (pass as command-line args):
+
+Notes:
+
+- The middleware expects dotted keys (e.g. `Host.DestinationHostUrl`).
+- In Kubernetes, env var names cannot contain `.`, and `Host__DestinationHostUrl`
+  does not map to `Host.DestinationHostUrl` for this container.
 
 ```
-Host.ListenUrl=http://127.0.0.1:8000
-Host.DestinationHostUrl=http://127.0.0.1:8080 # ssh-bastion
-Host.AutoHealingMiddlewareEnabled=false
-Host.UseConsoleLogging=true
-Host.UseFileLogging=true
-Host.RewriteHostHeader=false
+/Host.ListenUrl=http://127.0.0.1:8000
+/Host.DestinationHostUrl=http://127.0.0.1:8080 # ssh-bastion
+/Host.AutoHealingMiddlewareEnabled=false
+/Host.UseConsoleLogging=true
+/Host.UseFileLogging=true
+/Host.RewriteHostHeader=false
+```
+
+Variables (via K8s Secret / ConfigMap environment variables):
+
+```
 WEBSITE_AUTH_FROM_FILE=true
 WEBSITE_AUTH_FILE_PATH=/app/easyauth-config.json
 ```
@@ -182,8 +225,7 @@ X-MS-CLIENT-PRINCIPAL-IDP: aad
 Authentication HTML snippets:
 
 ```html
-<a href="/.auth/login/aad?post_login_redirect_uri=/home">Sign in with Microsoft Entra</a>
-<a href="/.auth/logout?post_logout_redirect_uri=/">Sign out</a>
+<a href="/.auth/logout?post_logout_redirect_uri=/">Sign Out</a>
 ```
 
 References:
@@ -214,22 +256,12 @@ Notes:
 
 Create (or reference) these ConfigMaps:
 
-- ConfigMap name: `ssh-bastion-easyauth-env`
-  - `Host__ListenUrl`: `http://127.0.0.1:8000`
-  - `Host__DestinationHostUrl`: `http://127.0.0.1:8080`
-  - `Host__AutoHealingMiddlewareEnabled`: `false`
-  - `Host__UseConsoleLogging`: `true`
-  - `Host__UseFileLogging`: `true`
-  - `Host__RewriteHostHeader`: `false`
-  - `WEBSITE_AUTH_FROM_FILE`: `true`
-  - `WEBSITE_AUTH_FILE_PATH`: `/app/easyauth-config.json`
-
 - ConfigMap name: `ssh-bastion-easyauth-config`
   - `easyauth-config.json`: JSON content mounted to `/app/easyauth-config.json`
 
 Notes:
 
-- The middleware documentation uses dotted setting names (e.g., `Host.ListenUrl`). In Kubernetes, environment variable names cannot contain dots; this design standardizes on the double-underscore form (`Host__ListenUrl`) for Helm/Compose wiring.
+- The middleware expects dotted keys (e.g., `Host.DestinationHostUrl`). For Kubernetes/Helm, pass these Host settings as container args (e.g., `/Host.DestinationHostUrl=...`) rather than env vars.
 
 #### Mounts
 
