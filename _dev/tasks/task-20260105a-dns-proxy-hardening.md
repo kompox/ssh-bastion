@@ -2,7 +2,7 @@
 id: task-20260105a-dns-proxy-hardening
 title: Security - DNS proxy hardening
 status: done
-updated: 2026-01-05T23:54:48Z
+updated: 2026-01-06T22:59:14Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 
@@ -66,10 +66,19 @@ Add configuration to restrict DNS proxy resolution to configured aliases only (r
 - 2026-01-05T23:54:48Z
 	- Marked task as done
 
+- 2026-01-06T22:59:14Z
+	- Normalized References section to match task reference-label style
+
 ## References
 
-- [_dev/design/design-app-dns.md](../design/design-app-dns.md)
-- [_dev/design/design-overview.md](../design/design-overview.md)
-- [internal/dnsproxy/server.go](../../internal/dnsproxy/server.go)
-- [internal/dns/registry.go](../../internal/dns/registry.go)
-- [internal/config/config.go](../../internal/config/config.go)
+- [design-app-dns] - Bastion-local DNS (DNS proxy)
+- [design-overview] - Design overview
+- [dnsproxy-server] - DNS proxy server implementation
+- [dns-registry] - DNS alias registry
+- [config] - Environment variable configuration
+
+[design-app-dns]: ../design/design-app-dns.md
+[design-overview]: ../design/design-overview.md
+[dnsproxy-server]: ../../internal/dnsproxy/server.go
+[dns-registry]: ../../internal/dns/registry.go
+[config]: ../../internal/config/config.go
