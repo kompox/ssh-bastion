@@ -1,0 +1,93 @@
+---
+id: task-20260106a-ssh-forwarding-hardening
+title: Security - SSH forwarding hardening
+status: in-progress
+updated: 2026-01-06T22:59:14Z
+assistedBy: github/copilot (vscode) gpt-5.2
+---
+
+## Goal
+
+Restrict sshd TCP port forwarding to configured targets only (block arbitrary destination IP/ports) while supporting non-22 tunnels (e.g., DB access).
+
+## Non-Goals
+
+- Providing shell access on the bastion
+- Per-user / per-role target allowlists (global allowlist only)
+- Building a general-purpose service discovery system (this task is about an allowlist + enforcement)
+- Adding a restart control to the admin UI (decide UX/ops in a separate task)
+
+## Plan & Checklist
+
+- [x] Finalize spec in this task file (no implementation before this)
+- [ ] Review current sshd container configuration and how it loads/reloads sshd_config
+- [x] Decide configuration persistence (store global mode under `${SSHBASTION_DATA_DIR}`)
+- [x] Decide target storage format and location under `${SSHBASTION_DATA_DIR}`
+- [ ] Update route list in `_dev/design/design-app-http.md` (add `/admin/targets` endpoints)
+- [ ] Implement target registry CRUD (storage layer)
+- [ ] Implement admin UI:
+  - [ ] `GET /admin/targets` list page
+  - [ ] Guided add form (no textarea)
+  - [ ] `POST /admin/targets/add`
+  - [ ] `POST /admin/targets/enable`
+  - [ ] `POST /admin/targets/disable`
+  - [ ] `POST /admin/targets/delete`
+- [ ] Implement sshd_config generation using `PermitOpen` allowlist
+- [ ] Implement safe reload/restart behavior for sshd when config changes
+- [ ] Add unit tests for parsing/validation
+- [ ] Add E2E/integration tests to verify forwarding is denied/allowed as expected
+- [ ] Update design docs and operator docs as needed
+
+## Specification
+
+Specification is maintained in [design-ssh-forwarding].
+
+## Progress
+
+- 2026-01-06T22:04:07Z
+
+  - Created task and moved roadmap item to IN-PROGRESS
+
+- 2026-01-06T22:15:04Z
+  - Updated spec: guided forms UI, accept `PermitOpen` rule strings, and support enable/disable/remove
+
+- 2026-01-06T22:17:40Z
+  - Updated spec: allow `any`/`none` and `*` wildcards; added explicit anti-injection validation requirements
+
+- 2026-01-06T22:23:14Z
+  - Updated spec: add global mode switch (`any`/`none`/`custom`); restrict custom rules to `host:port` only
+
+- 2026-01-06T22:27:45Z
+  - Updated spec: persist the global mode under `${SSHBASTION_DATA_DIR}` for operational switching
+
+- 2026-01-06T22:35:22Z
+  - Updated spec: polling-based propagation; support reload and restart triggers for operations
+
+- 2026-01-06T22:37:12Z
+  - Updated spec: set polling default to 5s; clarified restart depends on K8s/Compose restart configuration
+
+- 2026-01-06T22:47:34Z
+  - Decided /data layout: `${SSHBASTION_DATA_DIR}/ssh/forwarding.json` (mode/targets/restartGeneration)
+
+- 2026-01-06T22:54:16Z
+  - Task list update: moved inlined specification to design doc reference; added checklist item for updating design-app-http route list
+
+- 2026-01-06T22:57:50Z
+  - Normalized reference style: in-body reference uses `[design-ssh-forwarding]` and References display matches other task files
+
+- 2026-01-06T22:59:14Z
+  - Normalized References section to match task reference-label style
+
+## References
+
+- [design-ssh-forwarding] - SSH forwarding and sshd process lifecycle
+- [design-app-http] - Web app routes
+- [design-roadmap] - Development Roadmap
+- [design-containers] - Containers (image + runtime topology)
+- [design-overview] - Design overview
+
+[design-ssh-forwarding]: ../design/design-ssh-forwarding.md
+[design-app-http]: ../design/design-app-http.md
+[design-roadmap]: ../design/design-roadmap.md
+[design-containers]: ../design/design-containers.md
+[design-overview]: ../design/design-overview.md

@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-05T23:54:48Z
+updated: 2026-01-06T22:04:07Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -22,11 +22,13 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 - Chart name: `kompox-ssh-bastion` (avoid collisions with existing `ssh-bastion` charts)
 - Task: [task-20260104i-k8s-manifests-helm](../tasks/task-20260104i-k8s-manifests-helm.md)
 
+### Security: SSH forwarding hardening
+
+- Add settings to restrict sshd TCP port forwarding to configured targets only (block arbitrary destination IP/ports).
+- Admin UI: manage allowlisted targets (host:port) via `/admin/targets`.
+- Task: [task-20260106a-ssh-forwarding-hardening](../tasks/task-20260106a-ssh-forwarding-hardening.md)
+
 ## TODO
-
-### Security: SSH port forwarding hardening
-
-- Add settings to restrict sshd port forwarding to configured targets only (disallow arbitrary numerical addresses).
 
 ### Container entrypoints
 
