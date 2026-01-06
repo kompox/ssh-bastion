@@ -24,10 +24,21 @@ help:
 	echo "  e2e           Run all e2e/scripts/e2e-NN-*.sh scenarios"
 
 git-diff-cached:
-	git --no-pager diff --cached
+	@if ! git --no-pager diff --cached --exit-code; then \
+		echo; \
+		last=$$(ls _tmp/git-commit/[0-9]*.txt 2>/dev/null | sort -V | tail -1 | sed 's/.*\///' | sed 's/.txt//' | sed 's/^0*//'); \
+		if [ -n "$$last" ]; then \
+			next=$$(printf "%04d.txt" $$(($$last + 1))); \
+		else \
+			next="0001.txt"; \
+		fi; \
+		echo "Next commit message file: _tmp/git-commit/$$next"; \
+	else \
+		echo "No staged changes to commit."; \
+	fi
 
 git-commit-with-editor:
-	git -c core.editor='code --wait' commit -v -e -F $(lastword $(sort $(wildcard _tmp/git-commit/*.txt)))
+	git -c core.editor='code --wait' commit -v -e -F $(lastword $(sort $(wildcard _tmp/git-commit/[0-9]*.txt)))
 
 git-show:
 	git --no-pager show -1 --name-status --pretty=fuller && git status
