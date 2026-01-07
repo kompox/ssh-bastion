@@ -15,6 +15,7 @@ import (
 	"github.com/kompox/ssh-bastion/internal/auth"
 	"github.com/kompox/ssh-bastion/internal/config"
 	"github.com/kompox/ssh-bastion/internal/dns"
+	"github.com/kompox/ssh-bastion/internal/forwarding"
 	"github.com/kompox/ssh-bastion/internal/keys"
 	"github.com/kompox/ssh-bastion/internal/storage"
 	"github.com/yuin/goldmark"
@@ -25,6 +26,7 @@ type Server struct {
 	store       *storage.Store
 	keyRegistry *keys.Registry
 	dnsRegistry *dns.Registry
+	fwdRegistry *forwarding.Registry
 	authMw      *auth.Middleware
 	templates   *template.Template
 }
@@ -48,6 +50,7 @@ func Run(addr string) error {
 	store := storage.New(cfg.DataDir)
 	keyRegistry := keys.NewRegistry(store)
 	dnsRegistry := dns.NewRegistry(store)
+	fwdRegistry := forwarding.NewRegistry(store)
 	authMw := auth.NewMiddleware(cfg)
 
 	tmpl, err := template.ParseGlob(filepath.Join("web", "templates", "*.html"))
@@ -60,6 +63,7 @@ func Run(addr string) error {
 		store:       store,
 		keyRegistry: keyRegistry,
 		dnsRegistry: dnsRegistry,
+		fwdRegistry: fwdRegistry,
 		authMw:      authMw,
 		templates:   tmpl,
 	}
@@ -73,6 +77,7 @@ func Run(addr string) error {
 	mux.HandleFunc("GET /admin/users", srv.requireAdmin(srv.handleAdminUsersPage))
 	mux.HandleFunc("GET /admin/keys", srv.requireAdmin(srv.handleAdminKeysPage))
 	mux.HandleFunc("GET /admin/dns", srv.requireAdmin(srv.handleAdminDNSPage))
+	mux.HandleFunc("GET /admin/targets", srv.requireAdmin(srv.handleAdminTargetsPage))
 
 	mux.HandleFunc("POST /ssh/keys", srv.handleAddKey)
 	mux.HandleFunc("POST /ssh/keys/{fingerprint}/enable", srv.handleEnableKey)
@@ -82,6 +87,12 @@ func Run(addr string) error {
 	mux.HandleFunc("POST /admin/dns", srv.requireAdmin(srv.handleAddAlias))
 	mux.HandleFunc("POST /admin/dns/{source}/delete", srv.requireAdmin(srv.handleDeleteAlias))
 	mux.HandleFunc("POST /admin/home", srv.requireAdmin(srv.handleAdminHomeSave))
+
+	mux.HandleFunc("POST /admin/targets/mode", srv.requireAdmin(srv.handleSetTargetsMode))
+	mux.HandleFunc("POST /admin/targets/add", srv.requireAdmin(srv.handleAddTarget))
+	mux.HandleFunc("POST /admin/targets/{rule}/enable", srv.requireAdmin(srv.handleEnableTarget))
+	mux.HandleFunc("POST /admin/targets/{rule}/disable", srv.requireAdmin(srv.handleDisableTarget))
+	mux.HandleFunc("POST /admin/targets/{rule}/delete", srv.requireAdmin(srv.handleDeleteTarget))
 
 	handler := authMw.Authenticate(mux)
 
@@ -762,6 +773,203 @@ func (s *Server) handleDeleteAlias(w http.ResponseWriter, r *http.Request) {
 	)
 
 	http.Redirect(w, r, "/admin/dns", http.StatusSeeOther)
+}
+
+func (s *Server) handleAdminTargetsPage(w http.ResponseWriter, r *http.Request) {
+	flashKind := ""
+	flashMsg := ""
+
+	if r.URL.Query().Get("mode_set") == "1" {
+		flashKind = "success"
+		flashMsg = "Mode updated"
+	}
+	if r.URL.Query().Get("target_added") == "1" {
+		flashKind = "success"
+		flashMsg = "Target added"
+	}
+
+	s.renderAdminTargetsPage(w, r, http.StatusOK, "", "", flashKind, flashMsg)
+}
+
+func (s *Server) renderAdminTargetsPage(w http.ResponseWriter, r *http.Request, status int, formHost, formPort, flashKind, flashMsg string) {
+	email := auth.GetEmail(r)
+	role := auth.GetRole(r)
+	if flashKind == "" {
+		flashKind = "error"
+	}
+
+	cfg := forwarding.DefaultConfig()
+	if s.fwdRegistry != nil {
+		var err error
+		cfg, err = s.fwdRegistry.Load()
+		if err != nil {
+			s.logError(err, "load forwarding config failed",
+				"op", "targets_load",
+				"method", r.Method,
+				"path", r.URL.Path,
+			)
+			if flashMsg == "" {
+				flashMsg = "Failed to load targets"
+			}
+			cfg = forwarding.DefaultConfig()
+			if status == http.StatusOK {
+				status = http.StatusInternalServerError
+			}
+		}
+	}
+
+	data := map[string]any{
+		"Title":        "Forwarding Targets",
+		"Email":        email,
+		"Role":         role,
+		"AuthMode":     s.templateAuthMode(),
+		"Page":         "admin_targets",
+		"FlashKind":    flashKind,
+		"FlashMessage": flashMsg,
+		"FormHost":     formHost,
+		"FormPort":     formPort,
+		"Mode":         string(cfg.Mode),
+		"Targets":      cfg.Targets,
+	}
+
+	if status != http.StatusOK {
+		w.WriteHeader(status)
+	}
+	if err := s.templates.ExecuteTemplate(w, "layout.html", data); err != nil {
+		s.logError(err, "template execution failed",
+			"op", "template_execute",
+			"template", "layout.html",
+			"page", "admin_targets",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", status,
+		)
+	}
+}
+
+func (s *Server) handleSetTargetsMode(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		s.logWarn("parse form failed",
+			"op", "targets_mode",
+			"method", r.Method,
+			"path", r.URL.Path,
+		)
+		s.renderAdminTargetsPage(w, r, http.StatusBadRequest, "", "", "error", "Invalid form")
+		return
+	}
+
+	modeStr := r.FormValue("mode")
+	mode, err := forwarding.ParseMode(modeStr)
+	if err != nil {
+		s.renderAdminTargetsPage(w, r, http.StatusBadRequest, "", "", "error", fmt.Sprintf("Invalid mode: %v", err))
+		return
+	}
+
+	if err := s.fwdRegistry.SetMode(mode); err != nil {
+		s.logError(err, "set mode failed",
+			"op", "targets_mode",
+			"mode", string(mode),
+			"method", r.Method,
+			"path", r.URL.Path,
+		)
+		s.renderAdminTargetsPage(w, r, http.StatusInternalServerError, "", "", "error", "Failed to set mode")
+		return
+	}
+
+	http.Redirect(w, r, "/admin/targets?mode_set=1", http.StatusSeeOther)
+}
+
+func (s *Server) handleAddTarget(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		s.logWarn("parse form failed",
+			"op", "targets_add",
+			"method", r.Method,
+			"path", r.URL.Path,
+		)
+		s.renderAdminTargetsPage(w, r, http.StatusBadRequest, "", "", "error", "Invalid form")
+		return
+	}
+
+	host := strings.TrimSpace(r.FormValue("host"))
+	port := strings.TrimSpace(r.FormValue("port"))
+	rule := host + ":" + port
+
+	if err := s.fwdRegistry.AddTarget(rule); err != nil {
+		s.logWarn("add target failed",
+			"op", "targets_add",
+			"rule", rule,
+			"method", r.Method,
+			"path", r.URL.Path,
+			"err", err,
+		)
+		s.renderAdminTargetsPage(w, r, http.StatusBadRequest, host, port, "error", fmt.Sprintf("Failed to add target: %v", err))
+		return
+	}
+
+	http.Redirect(w, r, "/admin/targets?target_added=1", http.StatusSeeOther)
+}
+
+func (s *Server) handleEnableTarget(w http.ResponseWriter, r *http.Request) {
+	rule, err := url.PathUnescape(r.PathValue("rule"))
+	if err != nil || strings.TrimSpace(rule) == "" {
+		s.renderAdminTargetsPage(w, r, http.StatusBadRequest, "", "", "error", "Invalid rule")
+		return
+	}
+	if err := s.fwdRegistry.UpdateTargetStatus(rule, true); err != nil {
+		status := http.StatusInternalServerError
+		msg := "Failed to enable target"
+		kind := "error"
+		if os.IsNotExist(err) {
+			status = http.StatusBadRequest
+			msg = "Target not found"
+			kind = "warning"
+		}
+		s.renderAdminTargetsPage(w, r, status, "", "", kind, msg)
+		return
+	}
+	http.Redirect(w, r, "/admin/targets", http.StatusSeeOther)
+}
+
+func (s *Server) handleDisableTarget(w http.ResponseWriter, r *http.Request) {
+	rule, err := url.PathUnescape(r.PathValue("rule"))
+	if err != nil || strings.TrimSpace(rule) == "" {
+		s.renderAdminTargetsPage(w, r, http.StatusBadRequest, "", "", "error", "Invalid rule")
+		return
+	}
+	if err := s.fwdRegistry.UpdateTargetStatus(rule, false); err != nil {
+		status := http.StatusInternalServerError
+		msg := "Failed to disable target"
+		kind := "error"
+		if os.IsNotExist(err) {
+			status = http.StatusBadRequest
+			msg = "Target not found"
+			kind = "warning"
+		}
+		s.renderAdminTargetsPage(w, r, status, "", "", kind, msg)
+		return
+	}
+	http.Redirect(w, r, "/admin/targets", http.StatusSeeOther)
+}
+
+func (s *Server) handleDeleteTarget(w http.ResponseWriter, r *http.Request) {
+	rule, err := url.PathUnescape(r.PathValue("rule"))
+	if err != nil || strings.TrimSpace(rule) == "" {
+		s.renderAdminTargetsPage(w, r, http.StatusBadRequest, "", "", "error", "Invalid rule")
+		return
+	}
+	if err := s.fwdRegistry.DeleteTarget(rule); err != nil {
+		status := http.StatusInternalServerError
+		msg := "Failed to delete target"
+		kind := "error"
+		if os.IsNotExist(err) {
+			status = http.StatusBadRequest
+			msg = "Target not found"
+			kind = "warning"
+		}
+		s.renderAdminTargetsPage(w, r, status, "", "", kind, msg)
+		return
+	}
+	http.Redirect(w, r, "/admin/targets", http.StatusSeeOther)
 }
 
 type userProfile struct {

@@ -53,6 +53,8 @@
             {{template "admin_keys_content" .}}
         {{else if eq .Page "admin_dns"}}
             {{template "admin_dns_content" .}}
+        {{else if eq .Page "admin_targets"}}
+            {{template "admin_targets_content" .}}
         {{else}}
             {{template "keys_content" .}}
         {{end}}

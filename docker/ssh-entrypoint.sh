@@ -4,6 +4,7 @@ set -eu
 DATA_DIR="${SSHBASTION_DATA_DIR:-/data}"
 AUTHORIZED_KEYS_FILE="${DATA_DIR}/authorized_keys/jump"
 HOST_KEYS_DIR="${DATA_DIR}/ssh"
+FORWARDING_POLL_SECONDS="5"
 
 SSHD_LOG_LEVEL="${SSHBASTION_SSHD_LOG_LEVEL:-INFO}"
 case "${SSHD_LOG_LEVEL}" in
@@ -49,35 +50,70 @@ if [ ! -f "${HOST_KEYS_DIR}/ssh_host_rsa_key" ]; then
 fi
 chmod 0600 "${HOST_KEYS_DIR}/ssh_host_ed25519_key" "${HOST_KEYS_DIR}/ssh_host_rsa_key" || true
 
-cat > /tmp/sshd_config <<EOF
-Port 22
-ListenAddress 0.0.0.0
+/usr/local/bin/ssh-bastion sshd-config \
+	-data-dir "${DATA_DIR}" \
+	-authorized-keys-file "${AUTHORIZED_KEYS_FILE}" \
+	-host-keys-dir "${HOST_KEYS_DIR}" \
+	-log-level "${SSHD_LOG_LEVEL}" \
+	> /tmp/sshd_config
 
-HostKey ${HOST_KEYS_DIR}/ssh_host_ed25519_key
-HostKey ${HOST_KEYS_DIR}/ssh_host_rsa_key
+if ! /usr/sbin/sshd -t -f /tmp/sshd_config; then
+	echo "ERROR: initial sshd_config validation failed" >&2
+	exit 1
+fi
 
-PasswordAuthentication no
-KbdInteractiveAuthentication no
-PermitRootLogin no
-PubkeyAuthentication yes
-AuthenticationMethods publickey
+/usr/sbin/sshd -D -e -f /tmp/sshd_config &
+sshd_pid="$!"
 
-AuthorizedKeysFile ${AUTHORIZED_KEYS_FILE}
+terminate() {
+	if [ -n "${sshd_pid}" ] && kill -0 "${sshd_pid}" 2>/dev/null; then
+		kill "${sshd_pid}" 2>/dev/null || true
+		wait "${sshd_pid}" || true
+	fi
+	exit 0
+}
 
-AllowTcpForwarding yes
-X11Forwarding no
-AllowAgentForwarding no
-PermitTTY yes
+trap terminate INT TERM
 
-UseDNS no
-PrintMotd no
-LogLevel ${SSHD_LOG_LEVEL}
-Subsystem sftp internal-sftp
+last_restart_generation="$(/usr/local/bin/ssh-bastion forwarding-restart-generation -data-dir "${DATA_DIR}" 2>/dev/null || echo 0)"
 
-# This SSH endpoint is intended for ProxyJump / -W (direct-tcpip) only.
-# For session/exec requests, show a message and disconnect.
-Match User jump
-	ForceCommand /bin/sh /usr/local/bin/ssh-bastion-shell
-EOF
+while true; do
+	if ! kill -0 "${sshd_pid}" 2>/dev/null; then
+		wait "${sshd_pid}" || exit $?
+		exit 1
+	fi
 
-exec /usr/sbin/sshd -D -e -f /tmp/sshd_config
+	restart_generation="$(/usr/local/bin/ssh-bastion forwarding-restart-generation -data-dir "${DATA_DIR}" 2>/dev/null || echo 0)"
+	if [ "${restart_generation}" -gt "${last_restart_generation}" ]; then
+		echo "INFO: restart requested (restartGeneration ${last_restart_generation} -> ${restart_generation})" >&2
+		kill "${sshd_pid}" 2>/dev/null || true
+		wait "${sshd_pid}" || true
+		exit 0
+	fi
+	last_restart_generation="${restart_generation}"
+
+	if /usr/local/bin/ssh-bastion sshd-config \
+		-data-dir "${DATA_DIR}" \
+		-authorized-keys-file "${AUTHORIZED_KEYS_FILE}" \
+		-host-keys-dir "${HOST_KEYS_DIR}" \
+		-log-level "${SSHD_LOG_LEVEL}" \
+		> /tmp/sshd_config.new; then
+		if ! cmp -s /tmp/sshd_config.new /tmp/sshd_config; then
+			if /usr/sbin/sshd -t -f /tmp/sshd_config.new; then
+				mv /tmp/sshd_config.new /tmp/sshd_config
+				kill -HUP "${sshd_pid}" 2>/dev/null || true
+				echo "INFO: reloaded sshd_config" >&2
+			else
+				echo "WARN: generated sshd_config failed validation; keeping previous config" >&2
+				rm -f /tmp/sshd_config.new || true
+			fi
+		else
+			rm -f /tmp/sshd_config.new || true
+		fi
+	else
+		echo "WARN: failed to generate sshd_config; keeping previous config" >&2
+		rm -f /tmp/sshd_config.new || true
+	fi
+
+	sleep "${FORWARDING_POLL_SECONDS}"
+done

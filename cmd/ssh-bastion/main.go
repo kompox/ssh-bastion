@@ -14,13 +14,15 @@ import (
 	"time"
 
 	"github.com/kompox/ssh-bastion/internal/dnsproxy"
+	"github.com/kompox/ssh-bastion/internal/forwarding"
+	"github.com/kompox/ssh-bastion/internal/storage"
 	"github.com/kompox/ssh-bastion/internal/web"
 )
 
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Fprintln(os.Stderr, "Usage: ssh-bastion <command>")
-		fmt.Fprintln(os.Stderr, "Commands: serve, web")
+		fmt.Fprintln(os.Stderr, "Commands: serve, web, sshd-config, forwarding-restart-generation")
 		os.Exit(1)
 	}
 
@@ -31,10 +33,106 @@ func main() {
 	case "web":
 		// Back-compat alias for HTTP-only server.
 		runWeb()
+	case "sshd-config":
+		runSSHDConfig()
+	case "forwarding-restart-generation":
+		runForwardingRestartGeneration()
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
 		os.Exit(1)
 	}
+}
+
+func runForwardingRestartGeneration() {
+	fs := flag.NewFlagSet("forwarding-restart-generation", flag.ExitOnError)
+	dataDir := fs.String("data-dir", getEnvDefault("SSHBASTION_DATA_DIR", "/data"), "Data directory (default: SSHBASTION_DATA_DIR or /data)")
+	fs.Parse(os.Args[2:])
+
+	store := storage.New(*dataDir)
+	reg := forwarding.NewRegistry(store)
+	gen, err := reg.RestartGeneration()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	fmt.Fprintln(os.Stdout, gen)
+}
+
+func runSSHDConfig() {
+	fs := flag.NewFlagSet("sshd-config", flag.ExitOnError)
+	dataDir := fs.String("data-dir", getEnvDefault("SSHBASTION_DATA_DIR", "/data"), "Data directory (default: SSHBASTION_DATA_DIR or /data)")
+	authorizedKeysFile := fs.String("authorized-keys-file", "", "AuthorizedKeysFile path")
+	hostKeysDir := fs.String("host-keys-dir", "", "Host keys directory")
+	logLevel := fs.String("log-level", getEnvDefault("SSHBASTION_SSHD_LOG_LEVEL", "INFO"), "sshd LogLevel")
+	fs.Parse(os.Args[2:])
+
+	if strings.TrimSpace(*authorizedKeysFile) == "" {
+		fmt.Fprintln(os.Stderr, "-authorized-keys-file is required")
+		os.Exit(2)
+	}
+	if strings.TrimSpace(*hostKeysDir) == "" {
+		fmt.Fprintln(os.Stderr, "-host-keys-dir is required")
+		os.Exit(2)
+	}
+
+	store := storage.New(*dataDir)
+	reg := forwarding.NewRegistry(store)
+	fwd, err := reg.Load()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	permitOpen := ""
+	switch fwd.Mode {
+	case forwarding.ModeAny:
+		permitOpen = ""
+	case forwarding.ModeNone:
+		permitOpen = "PermitOpen none\n"
+	case forwarding.ModeCustom:
+		enabled, err := reg.EnabledRules()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		if len(enabled) == 0 {
+			permitOpen = "PermitOpen none\n"
+		} else {
+			permitOpen = "PermitOpen " + strings.Join(enabled, " ") + "\n"
+		}
+	default:
+		fmt.Fprintf(os.Stderr, "invalid forwarding mode: %q\n", fwd.Mode)
+		os.Exit(1)
+	}
+
+	var sb strings.Builder
+	sb.WriteString("Port 22\n")
+	sb.WriteString("ListenAddress 0.0.0.0\n\n")
+	sb.WriteString("HostKey " + strings.TrimRight(*hostKeysDir, "/") + "/ssh_host_ed25519_key\n")
+	sb.WriteString("HostKey " + strings.TrimRight(*hostKeysDir, "/") + "/ssh_host_rsa_key\n\n")
+	sb.WriteString("PasswordAuthentication no\n")
+	sb.WriteString("KbdInteractiveAuthentication no\n")
+	sb.WriteString("PermitRootLogin no\n")
+	sb.WriteString("PubkeyAuthentication yes\n")
+	sb.WriteString("AuthenticationMethods publickey\n\n")
+	sb.WriteString("AuthorizedKeysFile " + *authorizedKeysFile + "\n\n")
+	sb.WriteString("AllowTcpForwarding yes\n")
+	if permitOpen != "" {
+		sb.WriteString(permitOpen)
+	}
+	sb.WriteString("X11Forwarding no\n")
+	sb.WriteString("AllowAgentForwarding no\n")
+	sb.WriteString("PermitTTY yes\n\n")
+	sb.WriteString("UseDNS no\n")
+	sb.WriteString("PrintMotd no\n")
+	sb.WriteString("LogLevel " + *logLevel + "\n")
+	sb.WriteString("Subsystem sftp internal-sftp\n\n")
+	sb.WriteString("# This SSH endpoint is intended for ProxyJump / -W (direct-tcpip) only.\n")
+	sb.WriteString("# For session/exec requests, show a message and disconnect.\n")
+	sb.WriteString("Match User jump\n")
+	sb.WriteString("\tForceCommand /bin/sh /usr/local/bin/ssh-bastion-shell\n")
+
+	fmt.Fprint(os.Stdout, sb.String())
 }
 
 func runWeb() {

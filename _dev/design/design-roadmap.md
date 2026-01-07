@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-06T22:04:07Z
+updated: 2026-01-07T02:30:25Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -22,12 +22,6 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 - Chart name: `kompox-ssh-bastion` (avoid collisions with existing `ssh-bastion` charts)
 - Task: [task-20260104i-k8s-manifests-helm](../tasks/task-20260104i-k8s-manifests-helm.md)
 
-### Security: SSH forwarding hardening
-
-- Add settings to restrict sshd TCP port forwarding to configured targets only (block arbitrary destination IP/ports).
-- Admin UI: manage allowlisted targets (host:port) via `/admin/targets`.
-- Task: [task-20260106a-ssh-forwarding-hardening](../tasks/task-20260106a-ssh-forwarding-hardening.md)
-
 ## TODO
 
 ### Container entrypoints
@@ -46,6 +40,14 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
 - Decide and document mitigation for `known_hosts` collisions when the same FQDN is reachable externally
 
 ## DONE
+
+### Security: SSH forwarding hardening
+
+- Added settings to restrict sshd TCP port forwarding to configured targets only (block arbitrary destination IP/ports).
+- Admin UI: manage allowlisted targets (host:port) via `/admin/targets`.
+- Enforcement: generate sshd_config with `PermitOpen` allowlist and apply safely via reload/restart triggers.
+- Tests: unit tests + E2E scenario verifying allow/deny behavior.
+- Task: [task-20260106a-ssh-forwarding-hardening](../tasks/task-20260106a-ssh-forwarding-hardening.md)
 
 ### Security: DNS proxy hardening
 

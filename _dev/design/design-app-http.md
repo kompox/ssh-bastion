@@ -2,7 +2,7 @@
 id: design-app-http
 title: App HTTP (Routes & Sitemap)
 status: stable
-updated: 2026-01-04T12:53:35Z
+updated: 2026-01-06T23:43:09Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # App HTTP (Routes & Sitemap)
@@ -73,6 +73,9 @@ Admin pages (HTMX HTML pages; no compatibility routes):
 - `GET /admin/dns`
   - `200 OK`: DNS aliases admin page
   - Access: `admin` only
+- `GET /admin/targets`
+  - `200 OK`: SSH forwarding targets admin page
+  - Access: `admin` only
 
 Removed routes (no compatibility):
 
@@ -116,6 +119,27 @@ Admin operations are grouped per page:
   - `400`: alias not found → render `/admin/dns` with `flash-warning`
   - Access: `admin` only
 
+- `POST /admin/targets/mode`
+  - `303`: set mode success → redirect to `/admin/targets`
+  - `400`: validation error → render `/admin/targets` with `flash-error`
+  - Access: `admin` only
+- `POST /admin/targets/add`
+  - `303`: add target success → redirect to `/admin/targets`
+  - `400`: validation error → render `/admin/targets` with `flash-error`
+  - Access: `admin` only
+- `POST /admin/targets/{rule}/enable`
+  - `303`: enable success → redirect to `/admin/targets`
+  - `400`: target not found → render `/admin/targets` with `flash-warning`
+  - Access: `admin` only
+- `POST /admin/targets/{rule}/disable`
+  - `303`: disable success → redirect to `/admin/targets`
+  - `400`: target not found → render `/admin/targets` with `flash-warning`
+  - Access: `admin` only
+- `POST /admin/targets/{rule}/delete`
+  - `303`: delete success → redirect to `/admin/targets`
+  - `400`: target not found → render `/admin/targets` with `flash-warning`
+  - Access: `admin` only
+
 ## Sitemap
 
 ```text
@@ -143,6 +167,13 @@ Admin operations are grouped per page:
 /admin/dns
   (POST /admin/dns)                 Add alias
   (POST /admin/dns/{source}/delete) Delete alias
+
+/admin/targets
+  (POST /admin/targets/mode)              Set mode
+  (POST /admin/targets/add)               Add target
+  (POST /admin/targets/{rule}/enable)     Enable target
+  (POST /admin/targets/{rule}/disable)    Disable target
+  (POST /admin/targets/{rule}/delete)     Delete target
 ```
 
 ## References

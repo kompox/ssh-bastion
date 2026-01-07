@@ -1,0 +1,80 @@
+{{define "admin_targets_content"}}
+<h1>{{.Title}}</h1>
+
+{{if .FlashMessage}}
+<article role="alert" class="flash flash-{{.FlashKind}}">
+    <p>{{.FlashMessage}}</p>
+</article>
+{{end}}
+
+<article>
+    <header><strong>Mode</strong></header>
+    <form method="POST" action="/admin/targets/mode">
+        <label>
+            Global mode
+            <select name="mode" required>
+                <option value="any" {{if eq .Mode "any"}}selected{{end}}>any (unrestricted)</option>
+                <option value="none" {{if eq .Mode "none"}}selected{{end}}>none (block all)</option>
+                <option value="custom" {{if eq .Mode "custom"}}selected{{end}}>custom (allow listed)</option>
+            </select>
+        </label>
+        <button type="submit">Set Mode</button>
+    </form>
+</article>
+
+<article>
+    <header><strong>Add Target</strong></header>
+    <form method="POST" action="/admin/targets/add">
+        <label>
+            Host
+            <input type="text" name="host" placeholder="db.example.com" value="{{.FormHost}}" required>
+            <small>Use bracket form for IPv6: <code>[fd00::1]</code></small>
+        </label>
+        <label>
+            Port
+            <input type="text" name="port" placeholder="5432" value="{{.FormPort}}" required>
+            <small>Use <code>*</code> to allow all ports.</small>
+        </label>
+        <button type="submit">Add Target</button>
+    </form>
+</article>
+
+<h2>Targets</h2>
+
+{{if .Targets}}
+<table>
+    <thead>
+        <tr>
+            <th>Rule</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Targets}}
+        <tr>
+            <td><code>{{.Rule}}</code></td>
+            <td>{{if .Enabled}}Enabled{{else}}Disabled{{end}}</td>
+            <td>
+                {{if .Enabled}}
+                <form method="POST" action="/admin/targets/{{.Rule | urlquery}}/disable" style="display:inline">
+                    <button type="submit" class="secondary">Disable</button>
+                </form>
+                {{else}}
+                <form method="POST" action="/admin/targets/{{.Rule | urlquery}}/enable" style="display:inline">
+                    <button type="submit" class="secondary">Enable</button>
+                </form>
+                {{end}}
+                <form method="POST" action="/admin/targets/{{.Rule | urlquery}}/delete" style="display:inline">
+                    <button type="submit" class="contrast">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+{{else}}
+<p>No targets configured yet.</p>
+{{end}}
+
+{{end}}

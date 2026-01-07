@@ -1,10 +1,12 @@
 ---
 id: task-20260106a-ssh-forwarding-hardening
 title: Security - SSH forwarding hardening
-status: in-progress
-updated: 2026-01-06T22:59:14Z
+status: done
+updated: 2026-01-07T02:30:25Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
+
+# Task: Security - SSH forwarding hardening
 
 ## Goal
 
@@ -20,23 +22,24 @@ Restrict sshd TCP port forwarding to configured targets only (block arbitrary de
 ## Plan & Checklist
 
 - [x] Finalize spec in this task file (no implementation before this)
-- [ ] Review current sshd container configuration and how it loads/reloads sshd_config
+- [x] Review current sshd container configuration and how it loads/reloads sshd_config
 - [x] Decide configuration persistence (store global mode under `${SSHBASTION_DATA_DIR}`)
 - [x] Decide target storage format and location under `${SSHBASTION_DATA_DIR}`
-- [ ] Update route list in `_dev/design/design-app-http.md` (add `/admin/targets` endpoints)
-- [ ] Implement target registry CRUD (storage layer)
-- [ ] Implement admin UI:
-  - [ ] `GET /admin/targets` list page
-  - [ ] Guided add form (no textarea)
-  - [ ] `POST /admin/targets/add`
-  - [ ] `POST /admin/targets/enable`
-  - [ ] `POST /admin/targets/disable`
-  - [ ] `POST /admin/targets/delete`
-- [ ] Implement sshd_config generation using `PermitOpen` allowlist
-- [ ] Implement safe reload/restart behavior for sshd when config changes
-- [ ] Add unit tests for parsing/validation
-- [ ] Add E2E/integration tests to verify forwarding is denied/allowed as expected
-- [ ] Update design docs and operator docs as needed
+- [x] Update route list in `_dev/design/design-app-http.md` (add `/admin/targets` endpoints)
+- [x] Implement target registry CRUD (storage layer)
+- [x] Implement admin UI:
+  - [x] `GET /admin/targets` list page
+  - [x] Guided add form (no textarea)
+  - [x] `POST /admin/targets/add`
+  - [x] `POST /admin/targets/{rule}/enable`
+  - [x] `POST /admin/targets/{rule}/disable`
+  - [x] `POST /admin/targets/{rule}/delete`
+  - [x] `POST /admin/targets/mode`
+- [x] Implement sshd_config generation using `PermitOpen` allowlist
+- [x] Implement safe reload/restart behavior for sshd when config changes
+- [x] Add unit tests for parsing/validation
+- [x] Add E2E/integration tests to verify forwarding is denied/allowed as expected
+- [x] Update design docs and operator docs as needed
 
 ## Specification
 
@@ -77,6 +80,15 @@ Specification is maintained in [design-ssh-forwarding].
 
 - 2026-01-06T22:59:14Z
   - Normalized References section to match task reference-label style
+
+- 2026-01-06T23:43:09Z
+  - Implemented /admin/targets (mode + targets CRUD), forwarding.json registry + validation, sshd PermitOpen generation + polling reload/restart trigger, and updated design-app-http routes; verified make test
+
+- 2026-01-07T01:06:38Z
+  - Added E2E scenario to verify sshd port forwarding allow/deny behavior (PermitOpen)
+
+- 2026-01-07T02:30:25Z
+  - Marked task DONE (no further doc updates needed for this change)
 
 ## References
 
