@@ -2,7 +2,7 @@
 id: design-roadmap
 title: Development Roadmap
 status: draft
-updated: 2026-01-07T02:30:25Z
+updated: 2026-01-09T09:32:53Z
 assistedBy: github/copilot (vscode) gpt-5.2
 ---
 # Design: Development Roadmap
@@ -21,6 +21,16 @@ This roadmap complements [design-overview]. Container-specific decisions are tra
   - SecurityContext with minimal capabilities (likely `CAP_NET_BIND_SERVICE` for ports 22/53)
 - Chart name: `kompox-ssh-bastion` (avoid collisions with existing `ssh-bastion` charts)
 - Task: [task-20260104i-k8s-manifests-helm](../tasks/task-20260104i-k8s-manifests-helm.md)
+
+### UI: SSH key description field
+
+- Optional description field for SSH keys so users can easily identify them ("work laptop", "home desktop", etc.).
+- No edit UI required (set on add only).
+- Storage: store as the authorized_keys comment (not a separate metadata DB).
+- Sanitization: trim surrounding whitespace; normalize whitespace; reject control chars/newlines.
+- Length limit: max 128 chars after sanitization; over-limit is an error.
+- Design: [design-ssh-keys]
+- Task: [task-20260109a-ssh-key-description](../tasks/task-20260109a-ssh-key-description.md)
 
 ## TODO
 
@@ -193,7 +203,9 @@ Admin endpoints (initial scope):
 - [design-overview] - Design overview document
 - [design-containers] - Containers (image + runtime topology)
 - [design-app-http] - App HTTP (Routes & Sitemap)
+- [design-ssh-keys] - SSH keys (UI + storage)
 
 [design-overview]: ../design/design-overview.md
 [design-containers]: ../design/design-containers.md
 [design-app-http]: ../design/design-app-http.md
+[design-ssh-keys]: ../design/design-ssh-keys.md
